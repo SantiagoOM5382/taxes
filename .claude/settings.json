@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm --version)",
+      "Bash(openssl rand *)",
+      "Bash(npm install *)",
+      "Bash(node scripts/init-db.mjs)",
+      "Bash(npm run *)",
+      "Bash(npm start *)",
+      "Bash(curl -s -o /dev/null http://localhost:3001)",
+      "Bash(curl -s -o /dev/null http://localhost:3000)",
+      "Bash(break)",
+      "Bash(curl -s -X POST http://localhost:3000/api/auth/register -H 'Content-Type: application/json' -d '{\"nombre\":\"Carlos\",\"email\":\"carlos@test.com\",\"password\":\"secreto123\"}' -c /tmp/carlos.txt)",
+      "Bash(curl -s -X POST http://localhost:3000/api/auth/register -H 'Content-Type: application/json' -d '{\"nombre\":\"Santiago\",\"email\":\"santiago@test.com\",\"password\":\"secreto123\"}' -c /tmp/santiago.txt)",
+      "Bash(curl -s -X POST http://localhost:3000/api/deudas -b /tmp/carlos.txt -H 'Content-Type: application/json' -d '{\"descripcion\":\"Préstamo personal\",\"acreedor\":\"Santiago\",\"monto_inicial\":10000000}')",
+      "Bash(curl -s -X POST http://localhost:3000/api/deudas/1/pagos -b /tmp/carlos.txt -H 'Content-Type: application/json' -d '{\"monto\":1500000,\"fecha_pago\":\"2026-06-01\",\"comprobante_url\":\"https://firebasestorage.googleapis.com/v0/b/demo/comprobante1.jpg\"}')",
+      "Bash(curl -s -o /dev/null -w \"Santiago sin acceso -> HTTP %{http_code}\\\\n\" http://localhost:3000/deudas/1 -b /tmp/santiago.txt)",
+      "Bash(curl -s -X POST http://localhost:3000/api/deudas/1/compartir -b /tmp/carlos.txt -H 'Content-Type: application/json' -d '{\"email\":\"santiago@test.com\"}')",
+      "Bash(curl -s -X POST http://localhost:3000/api/deudas/1/pagos -b /tmp/santiago.txt -H 'Content-Type: application/json' -d '{\"monto\":99,\"fecha_pago\":\"2026-06-02\"}' -w \" -> HTTP %{http_code}\\\\n\")",
+      "Bash(curl -s -o /dev/null -m 3 http://localhost:3000)",
+      "Bash(curl -s -o /dev/null -m 3 http://localhost:3001)",
+      "Bash(sudo -n ss -tlnp)",
+      "Bash(ssh -T git@github.com -o StrictHostKeyChecking=accept-new -o BatchMode=yes)",
+      "Bash(sudo -n apt-get install -y gh)",
+      "Bash(mkdir -p ~/bin)",
+      "Bash(curl -sL https://github.com/cli/cli/releases/download/v2.76.2/gh_2.76.2_linux_amd64.tar.gz)",
+      "Bash(tar xz *)",
+      "Bash(cp /tmp/gh_2.76.2_linux_amd64/bin/gh ~/bin/)",
+      "Bash(~/bin/gh --version)"
+    ]
+  }
+}
