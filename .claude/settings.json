@@ -52,7 +52,16 @@
       "Bash(curl -s -X POST http://localhost:3000/api/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"santiago@test.com\",\"password\":\"secreto123\"}' -c /tmp/santiago.txt -o /dev/null)",
       "Bash(curl -s http://localhost:3000/ -b /tmp/santiago.txt)",
       "Bash(curl -s http://localhost:3000/ -b /tmp/carlos.txt)",
-      "Bash(git commit -q -m 'Home: deuda total en resumen y sección de deudas compartidas conmigo *)"
+      "Bash(git commit -q -m 'Home: deuda total en resumen y sección de deudas compartidas conmigo *)",
+      "Bash(curl -s -o /dev/null http://localhost:3000/finanzas -b /tmp/santiago.txt)",
+      "Bash(curl -s http://localhost:3000/api/cuentas -b /tmp/santiago.txt)",
+      "Bash(curl -s -X PATCH http://localhost:3000/api/cuentas/3 -b /tmp/carlos.txt -H 'Content-Type: application/json' -d '{\"estado\":\"inactiva\"}' -w \" <- desactivar\\\\n\")",
+      "Bash(curl -s -X POST http://localhost:3000/api/movimientos -b /tmp/carlos.txt -H 'Content-Type: application/json' -d '{\"tipo\":\"retiro\",\"cuenta_id\":3,\"monto\":1000}' -w \" <- retiro en desactivada\\\\n\")",
+      "Bash(curl -s -X POST http://localhost:3000/api/deudas/1/pagos -b /tmp/carlos.txt -H 'Content-Type: application/json' -d '{\"monto\":1000,\"fecha_pago\":\"2026-06-11\",\"cuenta_id\":3}' -w \" <- pago en desactivada\\\\n\")",
+      "Bash(grep -o 'Cuentas archivadas\\\\|US$ 0,00')",
+      "Bash(curl -s -X PATCH http://localhost:3000/api/cuentas/2 -b /tmp/carlos.txt -H 'Content-Type: application/json' -d '{\"estado\":\"activa\"}' -w \" <- restaurar binance\\\\n\")",
+      "Bash(curl -s -X PATCH http://localhost:3000/api/cuentas/3 -b /tmp/carlos.txt -H 'Content-Type: application/json' -d '{\"estado\":\"activa\"}' -w \" <- reactivar efectivo\\\\n\")",
+      "Bash(git commit -q -m 'Cuentas: Efectivo por defecto, estados activa/desactivada/archivada con bloqueo de uso *)"
     ]
   }
 }

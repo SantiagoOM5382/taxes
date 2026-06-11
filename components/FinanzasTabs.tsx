@@ -6,6 +6,7 @@ import NuevaCuenta from "./NuevaCuenta";
 import NuevoIngreso from "./NuevoIngreso";
 import NuevoMovimiento from "./NuevoMovimiento";
 import EliminarIngreso from "./EliminarIngreso";
+import CuentaAcciones from "./CuentaAcciones";
 import type { Cuenta } from "@/lib/finanzas";
 
 interface Ingreso {
@@ -58,6 +59,10 @@ export default function FinanzasTabs({
   const [modal, setModal] = useState<ModalAbierto>(null);
   const cerrar = () => setModal(null);
 
+  const visibles = cuentas.filter((c) => c.estado !== "archivada");
+  const archivadas = cuentas.filter((c) => c.estado === "archivada");
+  const activas = cuentas.filter((c) => c.estado === "activa");
+
   return (
     <>
       <div className="tabs">
@@ -83,7 +88,7 @@ export default function FinanzasTabs({
               + Agregar cuenta
             </button>
           </div>
-          {cuentas.length === 0 ? (
+          {visibles.length === 0 ? (
             <p className="muted">Registra tus cuentas: Nequi, Bancolombia, Binance, efectivo...</p>
           ) : (
             <table>
@@ -93,21 +98,58 @@ export default function FinanzasTabs({
                   <th>Tipo</th>
                   <th>Moneda</th>
                   <th>Saldo</th>
+                  <th></th>
                 </tr>
               </thead>
               <tbody>
-                {cuentas.map((c) => (
+                {visibles.map((c) => (
                   <tr key={c.id}>
-                    <td>{c.nombre}</td>
+                    <td>
+                      {c.nombre}{" "}
+                      {c.estado === "inactiva" && <span className="badge inactiva">desactivada</span>}
+                    </td>
                     <td>{c.tipo}</td>
                     <td>{c.moneda}</td>
                     <td className={`monto ${c.saldo < 0 ? "negativo" : ""}`}>
                       {fmt(c.moneda, c.saldo)}
                     </td>
+                    <td>
+                      <CuentaAcciones cuenta={c} />
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+          )}
+
+          {archivadas.length > 0 && (
+            <>
+              <h2 style={{ marginTop: 22 }}>Cuentas archivadas</h2>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Cuenta</th>
+                    <th>Tipo</th>
+                    <th>Moneda</th>
+                    <th>Saldo</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {archivadas.map((c) => (
+                    <tr key={c.id} style={{ opacity: 0.65 }}>
+                      <td>{c.nombre}</td>
+                      <td>{c.tipo}</td>
+                      <td>{c.moneda}</td>
+                      <td className="monto">{fmt(c.moneda, c.saldo)}</td>
+                      <td>
+                        <CuentaAcciones cuenta={c} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
           )}
         </div>
       )}
@@ -157,7 +199,7 @@ export default function FinanzasTabs({
         <div className="tab-panel">
           <div className="panel-header">
             <h2>Últimos movimientos</h2>
-            <button className="boton" onClick={() => setModal("movimiento")} disabled={cuentas.length === 0}>
+            <button className="boton" onClick={() => setModal("movimiento")} disabled={activas.length === 0}>
               + Mover dinero
             </button>
           </div>
@@ -197,10 +239,10 @@ export default function FinanzasTabs({
         <NuevaCuenta onSuccess={cerrar} />
       </Modal>
       <Modal open={modal === "ingreso"} onClose={cerrar} title="Registrar ingreso">
-        <NuevoIngreso cuentas={cuentas} onSuccess={cerrar} />
+        <NuevoIngreso cuentas={activas} onSuccess={cerrar} />
       </Modal>
       <Modal open={modal === "movimiento"} onClose={cerrar} title="Mover dinero">
-        <NuevoMovimiento cuentas={cuentas} onSuccess={cerrar} />
+        <NuevoMovimiento cuentas={activas} onSuccess={cerrar} />
       </Modal>
     </>
   );

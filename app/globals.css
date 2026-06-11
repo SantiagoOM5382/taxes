@@ -68,6 +68,9 @@ th { color: #666; font-size: 12px; text-transform: uppercase; }
 .badge.propia { background: #dcfce7; color: #166534; }
 .badge.compartida { background: #dbeafe; color: #1e40af; }
 .badge.responsabilidad { background: #fef3c7; color: #92400e; }
+.badge.inactiva { background: #f3f4f6; color: #6b7280; }
+button.secondary.accion { color: #555; border-color: #c9ccd6; background: #fff; }
+button.secondary.accion:hover { background: #f3f4f6; }
 .monto.negativo { color: #b91c1c; }
 .monto.positivo { color: #166534; }
 

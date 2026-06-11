@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
-import { listCuentas, listIngresos, listMovimientos } from "@/lib/finanzas";
+import { listCuentas, listIngresos, listMovimientos, ensureCuentaEfectivo } from "@/lib/finanzas";
 import { getTasaUSDCOP } from "@/lib/tasas";
 import FinanzasTabs from "@/components/FinanzasTabs";
 
@@ -20,6 +20,7 @@ export default async function FinanzasPage() {
   const user = await getSession();
   if (!user) redirect("/login");
 
+  await ensureCuentaEfectivo(user.id);
   const [cuentas, ingresos, movimientos, tasa] = await Promise.all([
     listCuentas(user.id),
     listIngresos(user.id),
@@ -27,8 +28,10 @@ export default async function FinanzasPage() {
     getTasaUSDCOP(),
   ]);
 
-  const totalCOP = cuentas.filter((c) => c.moneda === "COP").reduce((s, c) => s + c.saldo, 0);
-  const totalUSD = cuentas.filter((c) => c.moneda === "USD").reduce((s, c) => s + c.saldo, 0);
+  // Las archivadas no cuentan en los totales
+  const abiertas = cuentas.filter((c) => c.estado !== "archivada");
+  const totalCOP = abiertas.filter((c) => c.moneda === "COP").reduce((s, c) => s + c.saldo, 0);
+  const totalUSD = abiertas.filter((c) => c.moneda === "USD").reduce((s, c) => s + c.saldo, 0);
   const totalGeneral = tasa != null ? totalCOP + totalUSD * tasa : null;
 
   return (
@@ -56,7 +59,7 @@ export default async function FinanzasPage() {
         </div>
         <div>
           <span className="muted">Cuentas abiertas</span>
-          <strong>{cuentas.length}</strong>
+          <strong>{abiertas.length}</strong>
         </div>
       </div>
 

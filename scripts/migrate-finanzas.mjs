@@ -62,6 +62,7 @@ await addColumn("ALTER TABLE deudas ADD COLUMN categoria TEXT NOT NULL DEFAULT '
 await addColumn("ALTER TABLE deudas ADD COLUMN frecuencia_pago TEXT");
 await addColumn("ALTER TABLE deudas ADD COLUMN valor_estimado REAL");
 await addColumn("ALTER TABLE pagos ADD COLUMN cuenta_id INTEGER REFERENCES cuentas(id)");
+await addColumn("ALTER TABLE cuentas ADD COLUMN estado TEXT NOT NULL DEFAULT 'activa'"); // activa | inactiva | archivada
 
 console.log("\nMigración completada. Tablas actuales:");
 const res = await db.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name");

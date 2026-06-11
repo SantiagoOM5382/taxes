@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { listDeudas } from "@/lib/deudas";
-import { listCuentas } from "@/lib/finanzas";
+import { listCuentas, ensureCuentaEfectivo } from "@/lib/finanzas";
 import { getTasaUSDCOP } from "@/lib/tasas";
 import NuevaDeudaBoton from "@/components/NuevaDeudaBoton";
 
@@ -21,11 +21,13 @@ export default async function Home() {
   const user = await getSession();
   if (!user) redirect("/login");
 
-  const [todas, cuentas, tasa] = await Promise.all([
+  await ensureCuentaEfectivo(user.id);
+  const [todas, todasCuentas, tasa] = await Promise.all([
     listDeudas(user.id),
     listCuentas(user.id),
     getTasaUSDCOP(),
   ]);
+  const cuentas = todasCuentas.filter((c) => c.estado !== "archivada");
   const deudas = todas.filter((d) => d.categoria === "deuda" && d.es_propia);
   const responsabilidades = todas.filter(
     (d) => d.categoria === "responsabilidad" && d.es_propia

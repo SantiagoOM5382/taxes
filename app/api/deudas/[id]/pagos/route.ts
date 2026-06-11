@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
 import { getDeudaConAcceso } from "@/lib/deudas";
-import { getCuenta, registrarMovimiento } from "@/lib/finanzas";
+import { getCuentaOperable, registrarMovimiento, type Cuenta } from "@/lib/finanzas";
 
 export async function POST(
   req: NextRequest,
@@ -31,10 +31,11 @@ export async function POST(
   }
 
   // Cuenta de origen opcional: descuenta el saldo y deja el movimiento registrado
-  let cuenta = null;
+  let cuenta: Cuenta | null = null;
   if (cuenta_id) {
-    cuenta = await getCuenta(Number(cuenta_id), user.id);
-    if (!cuenta) return NextResponse.json({ error: "Cuenta no encontrada" }, { status: 404 });
+    const op = await getCuentaOperable(Number(cuenta_id), user.id);
+    if ("error" in op) return NextResponse.json({ error: op.error }, { status: op.status });
+    cuenta = op.cuenta;
     if (cuenta.saldo < montoNum) {
       return NextResponse.json(
         { error: `Saldo insuficiente en ${cuenta.nombre} (disponible: ${cuenta.saldo})` },

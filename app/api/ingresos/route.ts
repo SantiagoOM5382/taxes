@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
-import { listIngresos, getCuenta } from "@/lib/finanzas";
+import { listIngresos, getCuentaOperable } from "@/lib/finanzas";
 
 const FRECUENCIAS = ["semanal", "quincenal", "mensual", "unico"];
 const TIPOS = ["base", "extra"];
@@ -28,9 +28,9 @@ export async function POST(req: NextRequest) {
 
   let cuentaId: number | null = null;
   if (cuenta_id) {
-    const cuenta = await getCuenta(Number(cuenta_id), user.id);
-    if (!cuenta) return NextResponse.json({ error: "Cuenta no encontrada" }, { status: 404 });
-    cuentaId = cuenta.id;
+    const op = await getCuentaOperable(Number(cuenta_id), user.id);
+    if ("error" in op) return NextResponse.json({ error: op.error }, { status: op.status });
+    cuentaId = op.cuenta.id;
   }
 
   const result = await db.execute({

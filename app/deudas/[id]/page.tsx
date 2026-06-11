@@ -137,7 +137,7 @@ export default async function DeudaPage({
           <NuevoPago
             deudaId={deuda.id}
             subidaDisponible={storageConfigurado}
-            cuentas={await listCuentas(user.id)}
+            cuentas={(await listCuentas(user.id)).filter((c) => c.estado === "activa")}
           />
           <Compartir
             deudaId={deuda.id}

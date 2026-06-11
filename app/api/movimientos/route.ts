@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
-import { getCuenta, listMovimientos, registrarMovimiento } from "@/lib/finanzas";
+import { getCuentaOperable, listMovimientos, registrarMovimiento } from "@/lib/finanzas";
 
 export async function GET() {
   const user = await getSession();
@@ -23,8 +23,9 @@ export async function POST(req: NextRequest) {
 
   if (tipo === "recarga" || tipo === "retiro") {
     const monto = Number(body.monto);
-    const cuenta = await getCuenta(Number(body.cuenta_id), user.id);
-    if (!cuenta) return NextResponse.json({ error: "Cuenta no encontrada" }, { status: 404 });
+    const op = await getCuentaOperable(Number(body.cuenta_id), user.id);
+    if ("error" in op) return NextResponse.json({ error: op.error }, { status: op.status });
+    const cuenta = op.cuenta;
     if (!Number.isFinite(monto) || monto <= 0) {
       return NextResponse.json({ error: "monto (> 0) es obligatorio" }, { status: 400 });
     }
@@ -46,8 +47,9 @@ export async function POST(req: NextRequest) {
 
   if (tipo === "ajuste") {
     const saldoReal = Number(body.saldo_real);
-    const cuenta = await getCuenta(Number(body.cuenta_id), user.id);
-    if (!cuenta) return NextResponse.json({ error: "Cuenta no encontrada" }, { status: 404 });
+    const op = await getCuentaOperable(Number(body.cuenta_id), user.id);
+    if ("error" in op) return NextResponse.json({ error: op.error }, { status: op.status });
+    const cuenta = op.cuenta;
     if (!Number.isFinite(saldoReal)) {
       return NextResponse.json({ error: "saldo_real es obligatorio" }, { status: 400 });
     }
@@ -64,11 +66,12 @@ export async function POST(req: NextRequest) {
   if (tipo === "transferencia") {
     const monto = Number(body.monto);
     const montoDestino = body.monto_destino != null ? Number(body.monto_destino) : monto;
-    const origen = await getCuenta(Number(body.cuenta_origen), user.id);
-    const destino = await getCuenta(Number(body.cuenta_destino), user.id);
-    if (!origen || !destino) {
-      return NextResponse.json({ error: "Cuenta origen o destino no encontrada" }, { status: 404 });
-    }
+    const opOrigen = await getCuentaOperable(Number(body.cuenta_origen), user.id);
+    if ("error" in opOrigen) return NextResponse.json({ error: opOrigen.error }, { status: opOrigen.status });
+    const opDestino = await getCuentaOperable(Number(body.cuenta_destino), user.id);
+    if ("error" in opDestino) return NextResponse.json({ error: opDestino.error }, { status: opDestino.status });
+    const origen = opOrigen.cuenta;
+    const destino = opDestino.cuenta;
     if (origen.id === destino.id) {
       return NextResponse.json({ error: "Origen y destino no pueden ser la misma cuenta" }, { status: 400 });
     }
