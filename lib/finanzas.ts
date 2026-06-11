@@ -58,10 +58,11 @@ export async function getCuentaOperable(
   return { cuenta };
 }
 
-// Crea la cuenta "Efectivo" por defecto para usuarios que aún no tienen ninguna cuenta.
+// Garantiza que todo usuario tenga al menos una cuenta de tipo efectivo
+// (cuenta cualquier estado, incluso archivada, para no recrearla si el usuario la archivó).
 export async function ensureCuentaEfectivo(userId: string) {
   const res = await db.execute({
-    sql: "SELECT COUNT(*) AS n FROM cuentas WHERE user_id = ?",
+    sql: "SELECT COUNT(*) AS n FROM cuentas WHERE user_id = ? AND tipo = 'efectivo'",
     args: [userId],
   });
   if (Number(res.rows[0].n) === 0) {

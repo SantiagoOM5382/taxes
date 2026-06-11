@@ -61,7 +61,12 @@
       "Bash(grep -o 'Cuentas archivadas\\\\|US$ 0,00')",
       "Bash(curl -s -X PATCH http://localhost:3000/api/cuentas/2 -b /tmp/carlos.txt -H 'Content-Type: application/json' -d '{\"estado\":\"activa\"}' -w \" <- restaurar binance\\\\n\")",
       "Bash(curl -s -X PATCH http://localhost:3000/api/cuentas/3 -b /tmp/carlos.txt -H 'Content-Type: application/json' -d '{\"estado\":\"activa\"}' -w \" <- reactivar efectivo\\\\n\")",
-      "Bash(git commit -q -m 'Cuentas: Efectivo por defecto, estados activa/desactivada/archivada con bloqueo de uso *)"
+      "Bash(git commit -q -m 'Cuentas: Efectivo por defecto, estados activa/desactivada/archivada con bloqueo de uso *)",
+      "Bash(curl -s -X POST http://localhost:3000/api/auth/register -H 'Content-Type: application/json' -d '{\"nombre\":\"María\",\"email\":\"maria@test.com\",\"password\":\"secreto123\"}' -c /tmp/maria.txt -o /dev/null -w \"registro -> %{http_code}\\\\n\")",
+      "Bash(curl -s -X POST http://localhost:3000/api/cuentas -b /tmp/maria.txt -H 'Content-Type: application/json' -d '{\"nombre\":\"Bancolombia\",\"tipo\":\"banco\",\"moneda\":\"COP\",\"saldo\":500000}' -w \" <- crea solo Bancolombia\\\\n\")",
+      "Bash(curl -s http://localhost:3000/api/cuentas -b /tmp/maria.txt)",
+      "Bash(curl -s -o /dev/null http://localhost:3000/ -b /tmp/maria.txt)",
+      "Bash(git commit -q -m 'Efectivo por defecto también para usuarios con cuentas existentes sin tipo efectivo *)"
     ]
   }
 }
