@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { listCuentas, listIngresos, listMovimientos, ensureCuentaEfectivo } from "@/lib/finanzas";
-import { getTasaUSDCOP } from "@/lib/tasas";
+import { getTasasCOP } from "@/lib/tasas";
 import FinanzasTabs from "@/components/FinanzasTabs";
 
 const cop = new Intl.NumberFormat("es-CO", {
@@ -15,24 +15,34 @@ const usd = new Intl.NumberFormat("es-CO", {
   currency: "USD",
   maximumFractionDigits: 2,
 });
+const eur = new Intl.NumberFormat("es-CO", {
+  style: "currency",
+  currency: "EUR",
+  maximumFractionDigits: 2,
+});
 
 export default async function FinanzasPage() {
   const user = await getSession();
   if (!user) redirect("/login");
 
   await ensureCuentaEfectivo(user.id);
-  const [cuentas, ingresos, movimientos, tasa] = await Promise.all([
+  const [cuentas, ingresos, movimientos, tasas] = await Promise.all([
     listCuentas(user.id),
     listIngresos(user.id),
     listMovimientos(user.id),
-    getTasaUSDCOP(),
+    getTasasCOP(),
   ]);
 
   // Las archivadas no cuentan en los totales
   const abiertas = cuentas.filter((c) => c.estado !== "archivada");
   const totalCOP = abiertas.filter((c) => c.moneda === "COP").reduce((s, c) => s + c.saldo, 0);
   const totalUSD = abiertas.filter((c) => c.moneda === "USD").reduce((s, c) => s + c.saldo, 0);
-  const totalGeneral = tasa != null ? totalCOP + totalUSD * tasa : null;
+  const totalEUR = abiertas.filter((c) => c.moneda === "EUR").reduce((s, c) => s + c.saldo, 0);
+  const totalGeneral =
+    totalCOP +
+    (tasas.usd != null ? totalUSD * tasas.usd : 0) +
+    (tasas.eur != null ? totalEUR * tasas.eur : 0);
+  const hayEUR = abiertas.some((c) => c.moneda === "EUR");
 
   return (
     <main>
@@ -50,12 +60,16 @@ export default async function FinanzasPage() {
           <span className="muted">Total en USD</span>
           <strong className="monto">{usd.format(totalUSD)}</strong>
         </div>
+        {hayEUR && (
+          <div>
+            <span className="muted">Total en EUR</span>
+            <strong className="monto">{eur.format(totalEUR)}</strong>
+          </div>
+        )}
         <div>
           <span className="muted">Total general (COP)</span>
-          <strong className="monto">
-            {totalGeneral != null ? cop.format(totalGeneral) : "—"}
-          </strong>
-          {tasa != null && <span className="muted">TRM {cop.format(tasa)}</span>}
+          <strong className="monto">{cop.format(totalGeneral)}</strong>
+          {tasas.usd != null && <span className="muted">TRM {cop.format(tasas.usd)}</span>}
         </div>
         <div>
           <span className="muted">Cuentas abiertas</span>

@@ -66,7 +66,10 @@
       "Bash(curl -s -X POST http://localhost:3000/api/cuentas -b /tmp/maria.txt -H 'Content-Type: application/json' -d '{\"nombre\":\"Bancolombia\",\"tipo\":\"banco\",\"moneda\":\"COP\",\"saldo\":500000}' -w \" <- crea solo Bancolombia\\\\n\")",
       "Bash(curl -s http://localhost:3000/api/cuentas -b /tmp/maria.txt)",
       "Bash(curl -s -o /dev/null http://localhost:3000/ -b /tmp/maria.txt)",
-      "Bash(git commit -q -m 'Efectivo por defecto también para usuarios con cuentas existentes sin tipo efectivo *)"
+      "Bash(git commit -q -m 'Efectivo por defecto también para usuarios con cuentas existentes sin tipo efectivo *)",
+      "Bash(curl -s -X POST http://localhost:3000/api/cuentas -b /tmp/carlos.txt -H 'Content-Type: application/json' -d '{\"nombre\":\"Revolut\",\"tipo\":\"banco\",\"moneda\":\"EUR\",\"saldo\":80}' -w \" <- cuenta EUR\\\\n\")",
+      "Bash(curl -s -X POST http://localhost:3000/api/deudas -b /tmp/carlos.txt -H 'Content-Type: application/json' -d '{\"descripcion\":\"Matrícula universidad\",\"acreedor\":\"Universidad\",\"categoria\":\"deuda\",\"frecuencia_pago\":\"semestral\",\"monto_inicial\":4500000}' -w \" <- deuda semestral\\\\n\")",
+      "Bash(git commit -q -m 'Responsive móvil, frecuencia semestral y cuentas en euros *)"
     ]
   }
 }

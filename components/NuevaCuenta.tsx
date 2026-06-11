@@ -50,6 +50,7 @@ export default function NuevaCuenta({ onSuccess }: { onSuccess?: () => void }) {
         <select name="moneda" defaultValue="COP">
           <option value="COP">COP — Peso colombiano</option>
           <option value="USD">USD — Dólar</option>
+          <option value="EUR">EUR — Euro</option>
         </select>
         <label>Saldo actual</label>
         <input name="saldo" type="number" step="any" defaultValue={0} />

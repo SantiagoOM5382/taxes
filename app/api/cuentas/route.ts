@@ -4,7 +4,7 @@ import { getSession } from "@/lib/session";
 import { listCuentas } from "@/lib/finanzas";
 
 const TIPOS = ["banco", "billetera", "exchange", "efectivo"];
-const MONEDAS = ["COP", "USD"];
+const MONEDAS = ["COP", "USD", "EUR"];
 
 export async function GET() {
   const user = await getSession();

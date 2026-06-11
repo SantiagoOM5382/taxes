@@ -62,6 +62,7 @@ export default function NuevaDeuda({ onSuccess }: { onSuccess?: () => void }) {
           <option value="semanal">Semanal</option>
           <option value="quincenal">Quincenal</option>
           <option value="mensual">Mensual</option>
+          <option value="semestral">Semestral (cada 6 meses — ej. universidad)</option>
         </select>
 
         {categoria === "deuda" ? (

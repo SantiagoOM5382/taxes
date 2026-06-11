@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
     await req.json().catch(() => ({}));
 
   const cat = categoria === "responsabilidad" ? "responsabilidad" : "deuda";
-  const frecuencia = ["semanal", "quincenal", "mensual"].includes(frecuencia_pago)
+  const frecuencia = ["semanal", "quincenal", "mensual", "semestral"].includes(frecuencia_pago)
     ? frecuencia_pago
     : null;
 

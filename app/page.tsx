@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { listDeudas } from "@/lib/deudas";
 import { listCuentas, ensureCuentaEfectivo } from "@/lib/finanzas";
-import { getTasaUSDCOP } from "@/lib/tasas";
+import { getTasasCOP } from "@/lib/tasas";
 import NuevaDeudaBoton from "@/components/NuevaDeudaBoton";
 
 const cop = new Intl.NumberFormat("es-CO", {
@@ -11,21 +11,23 @@ const cop = new Intl.NumberFormat("es-CO", {
   currency: "COP",
   maximumFractionDigits: 0,
 });
-const usd = new Intl.NumberFormat("es-CO", {
-  style: "currency",
-  currency: "USD",
-  maximumFractionDigits: 2,
-});
+function fmtMoneda(moneda: string, valor: number) {
+  return new Intl.NumberFormat("es-CO", {
+    style: "currency",
+    currency: moneda,
+    maximumFractionDigits: 2,
+  }).format(valor);
+}
 
 export default async function Home() {
   const user = await getSession();
   if (!user) redirect("/login");
 
   await ensureCuentaEfectivo(user.id);
-  const [todas, todasCuentas, tasa] = await Promise.all([
+  const [todas, todasCuentas, tasas] = await Promise.all([
     listDeudas(user.id),
     listCuentas(user.id),
-    getTasaUSDCOP(),
+    getTasasCOP(),
   ]);
   const cuentas = todasCuentas.filter((c) => c.estado !== "archivada");
   const deudas = todas.filter((d) => d.categoria === "deuda" && d.es_propia);
@@ -36,7 +38,23 @@ export default async function Home() {
 
   const saldoCOP = cuentas.filter((c) => c.moneda === "COP").reduce((s, c) => s + c.saldo, 0);
   const saldoUSD = cuentas.filter((c) => c.moneda === "USD").reduce((s, c) => s + c.saldo, 0);
-  const saldoTotal = tasa != null ? saldoCOP + saldoUSD * tasa : null;
+  const saldoEUR = cuentas.filter((c) => c.moneda === "EUR").reduce((s, c) => s + c.saldo, 0);
+
+  // Suma todo lo convertible; las monedas sin tasa disponible se muestran aparte
+  const saldoTotal =
+    saldoCOP +
+    (tasas.usd != null ? saldoUSD * tasas.usd : 0) +
+    (tasas.eur != null ? saldoEUR * tasas.eur : 0);
+  const extranjeras = [
+    saldoUSD > 0 &&
+      (tasas.usd != null
+        ? `${fmtMoneda("USD", saldoUSD)} (TRM ${cop.format(tasas.usd)})`
+        : `${fmtMoneda("USD", saldoUSD)} aparte`),
+    saldoEUR > 0 &&
+      (tasas.eur != null
+        ? `${fmtMoneda("EUR", saldoEUR)} (a ${cop.format(tasas.eur)})`
+        : `${fmtMoneda("EUR", saldoEUR)} aparte`),
+  ].filter(Boolean);
   const deudaTotal = deudas.reduce((s, d) => s + d.monto_actual, 0);
 
   return (
@@ -54,15 +72,9 @@ export default async function Home() {
       <div className="card resumen">
         <div>
           <span className="muted">Saldo total</span>
-          <strong className="monto">
-            {saldoTotal != null ? cop.format(saldoTotal) : cop.format(saldoCOP)}
-          </strong>
-          {saldoUSD > 0 && (
-            <span className="muted">
-              {tasa != null
-                ? `incluye ${usd.format(saldoUSD)} (TRM ${cop.format(tasa)})`
-                : `+ ${usd.format(saldoUSD)} en dólares`}
-            </span>
+          <strong className="monto">{cop.format(saldoTotal)}</strong>
+          {extranjeras.length > 0 && (
+            <span className="muted">incluye {extranjeras.join(" y ")}</span>
           )}
         </div>
         <div>

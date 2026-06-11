@@ -32,7 +32,7 @@ function fmt(moneda: string, valor: number) {
   return new Intl.NumberFormat("es-CO", {
     style: "currency",
     currency: moneda,
-    maximumFractionDigits: moneda === "USD" ? 2 : 0,
+    maximumFractionDigits: moneda === "COP" ? 0 : 2,
   }).format(valor);
 }
 
