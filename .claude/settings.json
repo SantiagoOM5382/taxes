@@ -48,7 +48,11 @@
       "Bash(git add *)",
       "Bash(git commit -q -m 'Fase 1: módulo de finanzas — cuentas, ingresos, movimientos y categorías de deuda *)",
       "Bash(curl -s --max-time 10 https://open.er-api.com/v6/latest/USD)",
-      "Bash(git commit -q -m 'UI: modales, pestañas en Finanzas y saldo total unificado con TRM *)"
+      "Bash(git commit -q -m 'UI: modales, pestañas en Finanzas y saldo total unificado con TRM *)",
+      "Bash(curl -s -X POST http://localhost:3000/api/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"santiago@test.com\",\"password\":\"secreto123\"}' -c /tmp/santiago.txt -o /dev/null)",
+      "Bash(curl -s http://localhost:3000/ -b /tmp/santiago.txt)",
+      "Bash(curl -s http://localhost:3000/ -b /tmp/carlos.txt)",
+      "Bash(git commit -q -m 'Home: deuda total en resumen y sección de deudas compartidas conmigo *)"
     ]
   }
 }

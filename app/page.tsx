@@ -26,12 +26,16 @@ export default async function Home() {
     listCuentas(user.id),
     getTasaUSDCOP(),
   ]);
-  const deudas = todas.filter((d) => d.categoria === "deuda");
-  const responsabilidades = todas.filter((d) => d.categoria === "responsabilidad");
+  const deudas = todas.filter((d) => d.categoria === "deuda" && d.es_propia);
+  const responsabilidades = todas.filter(
+    (d) => d.categoria === "responsabilidad" && d.es_propia
+  );
+  const compartidas = todas.filter((d) => !d.es_propia);
 
   const saldoCOP = cuentas.filter((c) => c.moneda === "COP").reduce((s, c) => s + c.saldo, 0);
   const saldoUSD = cuentas.filter((c) => c.moneda === "USD").reduce((s, c) => s + c.saldo, 0);
   const saldoTotal = tasa != null ? saldoCOP + saldoUSD * tasa : null;
+  const deudaTotal = deudas.reduce((s, d) => s + d.monto_actual, 0);
 
   return (
     <main>
@@ -59,6 +63,12 @@ export default async function Home() {
             </span>
           )}
         </div>
+        <div>
+          <span className="muted">Deuda total actual</span>
+          <strong className="monto" style={{ color: deudaTotal > 0 ? "#b91c1c" : "#166534" }}>
+            {cop.format(deudaTotal)}
+          </strong>
+        </div>
       </div>
 
       <div className="card">
@@ -82,12 +92,7 @@ export default async function Home() {
                   <td>
                     <Link className="deuda-link" href={`/deudas/${d.id}`}>
                       {d.descripcion}
-                    </Link>{" "}
-                    {d.es_propia ? (
-                      <span className="badge propia">propia</span>
-                    ) : (
-                      <span className="badge compartida">de {d.dueno}</span>
-                    )}
+                    </Link>
                   </td>
                   <td>{d.acreedor ?? "—"}</td>
                   <td>{d.frecuencia_pago ?? "—"}</td>
@@ -121,8 +126,7 @@ export default async function Home() {
                   <td>
                     <Link className="deuda-link" href={`/deudas/${d.id}`}>
                       {d.descripcion}
-                    </Link>{" "}
-                    {!d.es_propia && <span className="badge compartida">de {d.dueno}</span>}
+                    </Link>
                   </td>
                   <td>{d.acreedor ?? "—"}</td>
                   <td>{d.frecuencia_pago ?? "—"}</td>
@@ -130,6 +134,53 @@ export default async function Home() {
                     {d.valor_estimado != null ? cop.format(d.valor_estimado) : "variable"}
                   </td>
                   <td className="monto">{cop.format(d.total_pagado)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      <div className="card">
+        <h2>Deudas compartidas conmigo</h2>
+        {compartidas.length === 0 ? (
+          <p className="muted">Nadie te ha compartido el seguimiento de una deuda todavía.</p>
+        ) : (
+          <table>
+            <thead>
+              <tr>
+                <th>Descripción</th>
+                <th>Dueño</th>
+                <th>Frecuencia</th>
+                <th>Inicial / estimado</th>
+                <th>Actual / pagado</th>
+              </tr>
+            </thead>
+            <tbody>
+              {compartidas.map((d) => (
+                <tr key={d.id}>
+                  <td>
+                    <Link className="deuda-link" href={`/deudas/${d.id}`}>
+                      {d.descripcion}
+                    </Link>{" "}
+                    {d.categoria === "responsabilidad" && (
+                      <span className="badge responsabilidad">responsabilidad</span>
+                    )}
+                  </td>
+                  <td>{d.dueno}</td>
+                  <td>{d.frecuencia_pago ?? "—"}</td>
+                  <td className="monto">
+                    {d.categoria === "deuda"
+                      ? cop.format(d.monto_inicial)
+                      : d.valor_estimado != null
+                        ? cop.format(d.valor_estimado)
+                        : "variable"}
+                  </td>
+                  <td className="monto">
+                    {d.categoria === "deuda"
+                      ? cop.format(d.monto_actual)
+                      : cop.format(d.total_pagado)}
+                  </td>
                 </tr>
               ))}
             </tbody>
