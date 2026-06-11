@@ -9,6 +9,9 @@ export interface Deuda {
   total_pagado: number;
   monto_actual: number;
   es_propia: boolean;
+  categoria: "deuda" | "responsabilidad";
+  frecuencia_pago: string | null;
+  valor_estimado: number | null;
 }
 
 // Devuelve la deuda solo si el usuario es dueño o tiene acceso compartido.
@@ -35,6 +38,9 @@ export async function getDeudaConAcceso(deudaId: string, userId: string) {
     total_pagado: Number(row.total_pagado),
     monto_actual: Number(row.monto_inicial) - Number(row.total_pagado),
     es_propia: Boolean(Number(row.es_propia)),
+    categoria: row.categoria === "responsabilidad" ? "responsabilidad" : "deuda",
+    frecuencia_pago: row.frecuencia_pago ? String(row.frecuencia_pago) : null,
+    valor_estimado: row.valor_estimado != null ? Number(row.valor_estimado) : null,
   } satisfies Deuda;
 }
 
@@ -59,5 +65,10 @@ export async function listDeudas(userId: string) {
     total_pagado: Number(row.total_pagado),
     monto_actual: Number(row.monto_inicial) - Number(row.total_pagado),
     es_propia: Boolean(Number(row.es_propia)),
+    categoria: (row.categoria === "responsabilidad" ? "responsabilidad" : "deuda") as
+      | "deuda"
+      | "responsabilidad",
+    frecuencia_pago: row.frecuencia_pago ? String(row.frecuencia_pago) : null,
+    valor_estimado: row.valor_estimado != null ? Number(row.valor_estimado) : null,
   }));
 }

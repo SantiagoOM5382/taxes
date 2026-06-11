@@ -26,7 +26,27 @@
       "Bash(curl -sL https://github.com/cli/cli/releases/download/v2.76.2/gh_2.76.2_linux_amd64.tar.gz)",
       "Bash(tar xz *)",
       "Bash(cp /tmp/gh_2.76.2_linux_amd64/bin/gh ~/bin/)",
-      "Bash(~/bin/gh --version)"
+      "Bash(~/bin/gh --version)",
+      "Bash(~/bin/gh auth *)",
+      "Bash(sleep 8; find /tmp/claude-1000 -name 'bfzyaaroy*' 2>/dev/null; cat /tmp/claude-1000/-home-analista-ti-sty-taxes/b8fd7735-8317-4e89-8a33-a90bee9a5051/tasks/bfzyaaroy.output 2>&1 | head)",
+      "Read(//tmp/claude-1000/**)",
+      "Bash(echo \"exit: $?\")",
+      "Bash(curl -s -X POST http://localhost:3000/api/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"carlos@test.com\",\"password\":\"secreto123\"}' -c /tmp/carlos.txt -o /dev/null -w \"login -> %{http_code}\\\\n\")",
+      "Bash(curl -s -X POST http://localhost:3000/api/cuentas -b /tmp/carlos.txt -H 'Content-Type: application/json' -d '{\"nombre\":\"Nequi\",\"tipo\":\"billetera\",\"moneda\":\"COP\",\"saldo\":800000}' -w \" <- nequi\\\\n\")",
+      "Bash(curl -s -X POST http://localhost:3000/api/cuentas -b /tmp/carlos.txt -H 'Content-Type: application/json' -d '{\"nombre\":\"Binance\",\"tipo\":\"exchange\",\"moneda\":\"USD\",\"saldo\":50}' -w \" <- binance\\\\n\")",
+      "Bash(curl -s -X POST http://localhost:3000/api/cuentas -b /tmp/carlos.txt -H 'Content-Type: application/json' -d '{\"nombre\":\"Efectivo\",\"tipo\":\"efectivo\",\"moneda\":\"COP\",\"saldo\":100000}' -w \" <- efectivo\\\\n\")",
+      "Bash(curl -s -X POST http://localhost:3000/api/ingresos -b /tmp/carlos.txt -H 'Content-Type: application/json' -d '{\"descripcion\":\"Sueldo\",\"monto\":1500000,\"frecuencia\":\"quincenal\",\"tipo\":\"base\",\"cuenta_id\":1}' -w \" <- ingreso\\\\n\")",
+      "Bash(curl -s -X POST http://localhost:3000/api/movimientos -b /tmp/carlos.txt -H 'Content-Type: application/json' -d '{\"tipo\":\"transferencia\",\"cuenta_origen\":1,\"cuenta_destino\":2,\"monto\":400000,\"monto_destino\":100,\"descripcion\":\"Ahorro en dólares\"}' -w \" <- transferencia\\\\n\")",
+      "Bash(curl -s -X POST http://localhost:3000/api/movimientos -b /tmp/carlos.txt -H 'Content-Type: application/json' -d '{\"tipo\":\"retiro\",\"cuenta_id\":3,\"monto\":999999999}' -w \" <- retiro excesivo\\\\n\")",
+      "Bash(curl -s -X POST http://localhost:3000/api/deudas -b /tmp/carlos.txt -H 'Content-Type: application/json' -d '{\"descripcion\":\"Arriendo\",\"acreedor\":\"Inmobiliaria\",\"categoria\":\"responsabilidad\",\"frecuencia_pago\":\"mensual\",\"valor_estimado\":900000}' -w \" <- arriendo\\\\n\")",
+      "Bash(curl -s -X POST http://localhost:3000/api/deudas/1/pagos -b /tmp/carlos.txt -H 'Content-Type: application/json' -d '{\"monto\":300000,\"fecha_pago\":\"2026-06-11\",\"cuenta_id\":1}' -w \" <- pago desde Nequi\\\\n\")",
+      "Bash(curl -s -X POST http://localhost:3000/api/deudas/1/pagos -b /tmp/carlos.txt -H 'Content-Type: application/json' -d '{\"monto\":99999999,\"fecha_pago\":\"2026-06-11\",\"cuenta_id\":1}' -w \" <- pago excesivo\\\\n\")",
+      "Bash(curl -s -o /dev/null -w \"/ -> %{http_code}\\\\n\" http://localhost:3000/ -b /tmp/carlos.txt)",
+      "Bash(curl -s -o /dev/null -w \"/finanzas -> %{http_code}\\\\n\" http://localhost:3000/finanzas -b /tmp/carlos.txt)",
+      "Bash(curl -s -o /dev/null -w \"/deudas/5 \\(responsabilidad\\) -> %{http_code}\\\\n\" http://localhost:3000/deudas/5 -b /tmp/carlos.txt)",
+      "Bash(curl -s http://localhost:3000/finanzas -b /tmp/carlos.txt)",
+      "Bash(git add *)",
+      "Bash(git commit -q -m 'Fase 1: módulo de finanzas — cuentas, ingresos, movimientos y categorías de deuda *)"
     ]
   }
 }

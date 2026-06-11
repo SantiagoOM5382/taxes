@@ -67,6 +67,9 @@ th { color: #666; font-size: 12px; text-transform: uppercase; }
 }
 .badge.propia { background: #dcfce7; color: #166534; }
 .badge.compartida { background: #dbeafe; color: #1e40af; }
+.badge.responsabilidad { background: #fef3c7; color: #92400e; }
+.monto.negativo { color: #b91c1c; }
+.monto.positivo { color: #166534; }
 
 .monto { font-variant-numeric: tabular-nums; }
 .error { color: #b91c1c; font-size: 13px; }

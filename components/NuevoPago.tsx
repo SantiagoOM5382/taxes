@@ -3,12 +3,21 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+interface CuentaOption {
+  id: number;
+  nombre: string;
+  moneda: string;
+  saldo: number;
+}
+
 export default function NuevoPago({
   deudaId,
   subidaDisponible,
+  cuentas,
 }: {
   deudaId: number;
   subidaDisponible: boolean;
+  cuentas: CuentaOption[];
 }) {
   const router = useRouter();
   const [error, setError] = useState("");
@@ -45,6 +54,7 @@ export default function NuevoPago({
           monto: form.get("monto"),
           fecha_pago: form.get("fecha_pago"),
           comprobante_url: comprobanteUrl || null,
+          cuenta_id: form.get("cuenta_id") || null,
         }),
       });
       if (!res.ok) {
@@ -68,6 +78,15 @@ export default function NuevoPago({
         <input name="monto" type="number" min="1" step="any" required />
         <label>Fecha del pago</label>
         <input name="fecha_pago" type="date" required />
+        <label>¿De qué cuenta sale el dinero?</label>
+        <select name="cuenta_id" defaultValue="">
+          <option value="">— Sin descontar de ninguna cuenta —</option>
+          {cuentas.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.nombre} ({c.moneda} {c.saldo.toLocaleString("es-CO")})
+            </option>
+          ))}
+        </select>
         {subidaDisponible ? (
           <>
             <label>Comprobante (imagen o PDF — se guarda en Firebase Storage)</label>

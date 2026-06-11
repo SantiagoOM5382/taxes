@@ -6,6 +6,7 @@ import { getDeudaConAcceso } from "@/lib/deudas";
 import NuevoPago from "@/components/NuevoPago";
 import Compartir from "@/components/Compartir";
 import { storageConfigurado } from "@/lib/storage";
+import { listCuentas } from "@/lib/finanzas";
 
 const cop = new Intl.NumberFormat("es-CO", {
   style: "currency",
@@ -45,6 +46,9 @@ export default async function DeudaPage({
       </p>
       <h1>
         {deuda.descripcion}{" "}
+        {deuda.categoria === "responsabilidad" && (
+          <span className="badge responsabilidad">responsabilidad</span>
+        )}{" "}
         {deuda.es_propia ? (
           <span className="badge propia">propia</span>
         ) : (
@@ -58,19 +62,40 @@ export default async function DeudaPage({
           <strong>{deuda.acreedor ?? "—"}</strong>
         </div>
         <div>
-          <span className="muted">Deuda inicial</span>
-          <strong className="monto">{cop.format(deuda.monto_inicial)}</strong>
+          <span className="muted">Frecuencia</span>
+          <strong>{deuda.frecuencia_pago ?? "—"}</strong>
         </div>
-        <div>
-          <span className="muted">Total pagado</span>
-          <strong className="monto">{cop.format(deuda.total_pagado)}</strong>
-        </div>
-        <div>
-          <span className="muted">Deuda actual</span>
-          <strong className="monto" style={{ color: deuda.monto_actual <= 0 ? "#166534" : "#b91c1c" }}>
-            {cop.format(deuda.monto_actual)}
-          </strong>
-        </div>
+        {deuda.categoria === "deuda" ? (
+          <>
+            <div>
+              <span className="muted">Deuda inicial</span>
+              <strong className="monto">{cop.format(deuda.monto_inicial)}</strong>
+            </div>
+            <div>
+              <span className="muted">Total pagado</span>
+              <strong className="monto">{cop.format(deuda.total_pagado)}</strong>
+            </div>
+            <div>
+              <span className="muted">Deuda actual</span>
+              <strong className="monto" style={{ color: deuda.monto_actual <= 0 ? "#166534" : "#b91c1c" }}>
+                {cop.format(deuda.monto_actual)}
+              </strong>
+            </div>
+          </>
+        ) : (
+          <>
+            <div>
+              <span className="muted">Valor estimado por pago</span>
+              <strong className="monto">
+                {deuda.valor_estimado != null ? cop.format(deuda.valor_estimado) : "variable"}
+              </strong>
+            </div>
+            <div>
+              <span className="muted">Total pagado histórico</span>
+              <strong className="monto">{cop.format(deuda.total_pagado)}</strong>
+            </div>
+          </>
+        )}
       </div>
 
       <div className="card">
@@ -109,7 +134,11 @@ export default async function DeudaPage({
 
       {deuda.es_propia && (
         <>
-          <NuevoPago deudaId={deuda.id} subidaDisponible={storageConfigurado} />
+          <NuevoPago
+            deudaId={deuda.id}
+            subidaDisponible={storageConfigurado}
+            cuentas={await listCuentas(user.id)}
+          />
           <Compartir
             deudaId={deuda.id}
             accesos={(accesosRes?.rows ?? []).map((r) => ({
