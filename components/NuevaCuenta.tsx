@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-export default function NuevaCuenta() {
+export default function NuevaCuenta({ onSuccess }: { onSuccess?: () => void }) {
   const router = useRouter();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -32,12 +32,11 @@ export default function NuevaCuenta() {
     }
     formEl.reset();
     router.refresh();
+    onSuccess?.();
   }
 
   return (
-    <div className="card">
-      <h2>Agregar cuenta</h2>
-      <form onSubmit={onSubmit}>
+    <form onSubmit={onSubmit}>
         <label>Nombre</label>
         <input name="nombre" placeholder="Nequi, Bancolombia, Binance, Efectivo..." required />
         <label>Tipo</label>
@@ -54,9 +53,8 @@ export default function NuevaCuenta() {
         </select>
         <label>Saldo actual</label>
         <input name="saldo" type="number" step="any" defaultValue={0} />
-        {error && <p className="error">{error}</p>}
-        <button disabled={loading}>{loading ? "Guardando..." : "Agregar cuenta"}</button>
-      </form>
-    </div>
+      {error && <p className="error">{error}</p>}
+      <button disabled={loading}>{loading ? "Guardando..." : "Agregar cuenta"}</button>
+    </form>
   );
 }

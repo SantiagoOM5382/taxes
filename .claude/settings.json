@@ -46,7 +46,9 @@
       "Bash(curl -s -o /dev/null -w \"/deudas/5 \\(responsabilidad\\) -> %{http_code}\\\\n\" http://localhost:3000/deudas/5 -b /tmp/carlos.txt)",
       "Bash(curl -s http://localhost:3000/finanzas -b /tmp/carlos.txt)",
       "Bash(git add *)",
-      "Bash(git commit -q -m 'Fase 1: módulo de finanzas — cuentas, ingresos, movimientos y categorías de deuda *)"
+      "Bash(git commit -q -m 'Fase 1: módulo de finanzas — cuentas, ingresos, movimientos y categorías de deuda *)",
+      "Bash(curl -s --max-time 10 https://open.er-api.com/v6/latest/USD)",
+      "Bash(git commit -q -m 'UI: modales, pestañas en Finanzas y saldo total unificado con TRM *)"
     ]
   }
 }

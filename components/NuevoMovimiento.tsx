@@ -6,7 +6,13 @@ import type { Cuenta } from "@/lib/finanzas";
 
 type Tipo = "recarga" | "retiro" | "transferencia" | "ajuste";
 
-export default function NuevoMovimiento({ cuentas }: { cuentas: Cuenta[] }) {
+export default function NuevoMovimiento({
+  cuentas,
+  onSuccess,
+}: {
+  cuentas: Cuenta[];
+  onSuccess?: () => void;
+}) {
   const router = useRouter();
   const [tipo, setTipo] = useState<Tipo>("recarga");
   const [error, setError] = useState("");
@@ -47,6 +53,7 @@ export default function NuevoMovimiento({ cuentas }: { cuentas: Cuenta[] }) {
     }
     formEl.reset();
     router.refresh();
+    onSuccess?.();
   }
 
   const opciones = cuentas.map((c) => (
@@ -56,9 +63,7 @@ export default function NuevoMovimiento({ cuentas }: { cuentas: Cuenta[] }) {
   ));
 
   return (
-    <div className="card">
-      <h2>Mover dinero</h2>
-      <form onSubmit={onSubmit}>
+    <form onSubmit={onSubmit}>
         <label>Operación</label>
         <select value={tipo} onChange={(e) => setTipo(e.target.value as Tipo)}>
           <option value="recarga">Recarga / entrada de dinero</option>
@@ -96,9 +101,8 @@ export default function NuevoMovimiento({ cuentas }: { cuentas: Cuenta[] }) {
 
         <label>Descripción (opcional)</label>
         <input name="descripcion" placeholder="Quincena, ahorro, gastos..." />
-        {error && <p className="error">{error}</p>}
-        <button disabled={loading}>{loading ? "Guardando..." : "Registrar"}</button>
-      </form>
-    </div>
+      {error && <p className="error">{error}</p>}
+      <button disabled={loading}>{loading ? "Guardando..." : "Registrar"}</button>
+    </form>
   );
 }

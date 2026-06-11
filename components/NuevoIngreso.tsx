@@ -4,7 +4,13 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Cuenta } from "@/lib/finanzas";
 
-export default function NuevoIngreso({ cuentas }: { cuentas: Cuenta[] }) {
+export default function NuevoIngreso({
+  cuentas,
+  onSuccess,
+}: {
+  cuentas: Cuenta[];
+  onSuccess?: () => void;
+}) {
   const router = useRouter();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -34,12 +40,11 @@ export default function NuevoIngreso({ cuentas }: { cuentas: Cuenta[] }) {
     }
     formEl.reset();
     router.refresh();
+    onSuccess?.();
   }
 
   return (
-    <div className="card">
-      <h2>Registrar ingreso</h2>
-      <form onSubmit={onSubmit}>
+    <form onSubmit={onSubmit}>
         <label>Descripción</label>
         <input name="descripcion" placeholder="Sueldo empresa X" required />
         <label>Tipo</label>
@@ -65,9 +70,8 @@ export default function NuevoIngreso({ cuentas }: { cuentas: Cuenta[] }) {
             </option>
           ))}
         </select>
-        {error && <p className="error">{error}</p>}
-        <button disabled={loading}>{loading ? "Guardando..." : "Registrar ingreso"}</button>
-      </form>
-    </div>
+      {error && <p className="error">{error}</p>}
+      <button disabled={loading}>{loading ? "Guardando..." : "Registrar ingreso"}</button>
+    </form>
   );
 }

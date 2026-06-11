@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-export default function NuevaDeuda() {
+export default function NuevaDeuda({ onSuccess }: { onSuccess?: () => void }) {
   const router = useRouter();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -34,12 +34,11 @@ export default function NuevaDeuda() {
     }
     (e.target as HTMLFormElement).reset?.();
     router.refresh();
+    onSuccess?.();
   }
 
   return (
-    <div className="card">
-      <h2>Registrar deuda o responsabilidad</h2>
-      <form onSubmit={onSubmit}>
+    <form onSubmit={onSubmit}>
         <label>Categoría</label>
         <select
           value={categoria}
@@ -77,9 +76,8 @@ export default function NuevaDeuda() {
           </>
         )}
 
-        {error && <p className="error">{error}</p>}
-        <button disabled={loading}>{loading ? "Guardando..." : "Crear"}</button>
-      </form>
-    </div>
+      {error && <p className="error">{error}</p>}
+      <button disabled={loading}>{loading ? "Guardando..." : "Crear"}</button>
+    </form>
   );
 }
