@@ -5,6 +5,7 @@ import { getSession } from "@/lib/session";
 import { getDeudaConAcceso } from "@/lib/deudas";
 import NuevoPago from "@/components/NuevoPago";
 import Compartir from "@/components/Compartir";
+import SubirComprobante from "@/components/SubirComprobante";
 import { storageConfigurado } from "@/lib/storage";
 import { listCuentas } from "@/lib/finanzas";
 
@@ -121,6 +122,8 @@ export default async function DeudaPage({
                       <a href={String(p.comprobante_url)} target="_blank" rel="noopener noreferrer">
                         Ver comprobante
                       </a>
+                    ) : deuda.es_propia ? (
+                      <SubirComprobante deudaId={deuda.id} pagoId={p.id} subidaDisponible={storageConfigurado} />
                     ) : (
                       <span className="muted">—</span>
                     )}
