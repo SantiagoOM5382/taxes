@@ -24,6 +24,8 @@ export default function NuevaDeuda({ onSuccess }: { onSuccess?: () => void }) {
         frecuencia_pago: form.get("frecuencia_pago") || null,
         monto_inicial: form.get("monto_inicial"),
         valor_estimado: form.get("valor_estimado"),
+        tasa_interes: form.get("tasa_interes"),
+        fecha_vencimiento: form.get("fecha_vencimiento"),
       }),
     });
     setLoading(false);
@@ -69,6 +71,10 @@ export default function NuevaDeuda({ onSuccess }: { onSuccess?: () => void }) {
           <>
             <label>Monto inicial (COP)</label>
             <input name="monto_inicial" type="number" min="1" step="any" required />
+            <label>Tasa de interés anual % (opcional — ayuda al asesor a priorizar)</label>
+            <input name="tasa_interes" type="number" min="0" step="any" placeholder="ej. 28.5" />
+            <label>Fecha de vencimiento (opcional)</label>
+            <input name="fecha_vencimiento" type="date" />
           </>
         ) : (
           <>

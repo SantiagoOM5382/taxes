@@ -12,6 +12,8 @@ export interface Deuda {
   categoria: "deuda" | "responsabilidad";
   frecuencia_pago: string | null;
   valor_estimado: number | null;
+  tasa_interes: number | null;
+  fecha_vencimiento: string | null;
 }
 
 // Devuelve la deuda solo si el usuario es dueño o tiene acceso compartido.
@@ -41,6 +43,8 @@ export async function getDeudaConAcceso(deudaId: string, userId: string) {
     categoria: row.categoria === "responsabilidad" ? "responsabilidad" : "deuda",
     frecuencia_pago: row.frecuencia_pago ? String(row.frecuencia_pago) : null,
     valor_estimado: row.valor_estimado != null ? Number(row.valor_estimado) : null,
+    tasa_interes: row.tasa_interes != null ? Number(row.tasa_interes) : null,
+    fecha_vencimiento: row.fecha_vencimiento ? String(row.fecha_vencimiento) : null,
   } satisfies Deuda;
 }
 
@@ -70,5 +74,7 @@ export async function listDeudas(userId: string) {
       | "responsabilidad",
     frecuencia_pago: row.frecuencia_pago ? String(row.frecuencia_pago) : null,
     valor_estimado: row.valor_estimado != null ? Number(row.valor_estimado) : null,
+    tasa_interes: row.tasa_interes != null ? Number(row.tasa_interes) : null,
+    fecha_vencimiento: row.fecha_vencimiento ? String(row.fecha_vencimiento) : null,
   }));
 }

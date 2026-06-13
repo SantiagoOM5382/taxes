@@ -29,7 +29,7 @@ export default function RegisterPage() {
       setError(data.error ?? "Error al registrarse");
       return;
     }
-    router.push("/");
+    router.push("/dashboard");
     router.refresh();
   }
 

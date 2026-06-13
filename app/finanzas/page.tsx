@@ -47,7 +47,7 @@ export default async function FinanzasPage() {
   return (
     <main>
       <p style={{ marginBottom: 12 }}>
-        <Link href="/">← Volver al inicio</Link>
+        <Link href="/dashboard">← Volver al inicio</Link>
       </p>
       <h1>Mis Finanzas</h1>
 

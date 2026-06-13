@@ -25,7 +25,7 @@ export default function LoginPage() {
       setError(data.error ?? "Error al iniciar sesión");
       return;
     }
-    router.push("/");
+    router.push("/dashboard");
     router.refresh();
   }
 

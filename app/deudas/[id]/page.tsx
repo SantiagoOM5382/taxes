@@ -43,7 +43,7 @@ export default async function DeudaPage({
   return (
     <main>
       <p style={{ marginBottom: 12 }}>
-        <Link href="/">← Volver</Link>
+        <Link href="/dashboard">← Volver</Link>
       </p>
       <h1>
         {deuda.descripcion}{" "}
