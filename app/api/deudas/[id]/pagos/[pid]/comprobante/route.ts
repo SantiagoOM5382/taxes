@@ -52,7 +52,7 @@ export async function POST(
       args: [url, Number(pid), deuda.id],
     });
     // Si no se actualizó ninguna fila, devolver 404
-    if ((result.changes ?? 0) === 0) {
+    if (result.rowsAffected === 0) {
       return NextResponse.json({ error: "Pago no encontrado" }, { status: 404 });
     }
 

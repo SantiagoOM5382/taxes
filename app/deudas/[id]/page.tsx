@@ -123,7 +123,11 @@ export default async function DeudaPage({
                         Ver comprobante
                       </a>
                     ) : deuda.es_propia ? (
-                      <SubirComprobante deudaId={deuda.id} pagoId={p.id} subidaDisponible={storageConfigurado} />
+                      p.id != null ? (
+                        <SubirComprobante deudaId={deuda.id} pagoId={String(p.id)} subidaDisponible={storageConfigurado} />
+                      ) : (
+                        <span className="muted">—</span>
+                      )
                     ) : (
                       <span className="muted">—</span>
                     )}

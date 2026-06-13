@@ -9,9 +9,12 @@ export default function SubirComprobante({
   subidaDisponible,
 }: {
   deudaId: number;
-  pagoId: number | string;
+  pagoId: number | string | null;
   subidaDisponible: boolean;
 }) {
+  if (pagoId == null) {
+    return <span className="muted">—</span>;
+  }
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [loading, setLoading] = useState(false);
