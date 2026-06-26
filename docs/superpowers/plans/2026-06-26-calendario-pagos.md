@@ -1154,3 +1154,278 @@ Expected: sin errores.
 git add app/finanzas/page.tsx
 git commit -m "feat: badge día de pago en cuentas de crédito en /finanzas"
 ```
+
+---
+
+### Task 10: Editar responsabilidad — dia_pago y mes_pago
+
+**Files:**
+- Create: `app/api/deudas/[id]/route.ts`
+- Create: `components/EditarResponsabilidad.tsx`
+- Modify: `app/deudas/[id]/page.tsx`
+
+**Interfaces:**
+- Consumes: tipo `Deuda` extendido de Task 2 (incluye `dia_pago`, `mes_pago`, `frecuencia_pago`)
+- Produces:
+  - `PATCH /api/deudas/[id]` acepta `{ dia_pago?: number | null, mes_pago?: number | null, frecuencia_pago?: string, valor_estimado?: number | null }` — solo para el dueño
+  - Componente `EditarResponsabilidad` con formulario inline que muestra los valores actuales y permite editarlos
+
+- [ ] **Step 1: Crear `app/api/deudas/[id]/route.ts`**
+
+```ts
+import { NextRequest, NextResponse } from "next/server";
+import { db } from "@/lib/db";
+import { getSession } from "@/lib/session";
+
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const user = await getSession();
+  if (!user) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+
+  const { id } = await params;
+
+  // Verificar que la deuda existe y pertenece al usuario
+  const check = await db.execute({
+    sql: "SELECT id, categoria FROM deudas WHERE id = ? AND user_id = ?",
+    args: [id, user.id],
+  });
+  if (!check.rows[0]) {
+    return NextResponse.json({ error: "No encontrada o sin permiso" }, { status: 404 });
+  }
+
+  const body = await req.json().catch(() => ({}));
+  const { dia_pago, mes_pago, frecuencia_pago, valor_estimado } = body;
+
+  const frecuenciasValidas = ["semanal", "quincenal", "mensual", "semestral", "anual"];
+
+  // Validar dia_pago
+  let diaPagoVal: number | null = null;
+  if (dia_pago != null && dia_pago !== "") {
+    diaPagoVal = Number(dia_pago);
+    if (!Number.isInteger(diaPagoVal) || diaPagoVal < 1 || diaPagoVal > 31) {
+      return NextResponse.json({ error: "dia_pago debe ser entero entre 1 y 31" }, { status: 400 });
+    }
+  }
+
+  // Validar mes_pago
+  let mesPagoVal: number | null = null;
+  if (mes_pago != null && mes_pago !== "") {
+    mesPagoVal = Number(mes_pago);
+    if (!Number.isInteger(mesPagoVal) || mesPagoVal < 1 || mesPagoVal > 12) {
+      return NextResponse.json({ error: "mes_pago debe ser entero entre 1 y 12" }, { status: 400 });
+    }
+  }
+
+  // Validar frecuencia_pago
+  const frecuenciaVal =
+    frecuencia_pago && frecuenciasValidas.includes(frecuencia_pago) ? frecuencia_pago : undefined;
+
+  // Validar valor_estimado
+  let estimadoVal: number | null | undefined = undefined;
+  if (valor_estimado !== undefined) {
+    estimadoVal = valor_estimado === null || valor_estimado === "" ? null : Number(valor_estimado);
+    if (estimadoVal !== null && (!Number.isFinite(estimadoVal) || estimadoVal < 0)) {
+      return NextResponse.json({ error: "valor_estimado debe ser >= 0" }, { status: 400 });
+    }
+  }
+
+  // Construir SET dinámico con solo los campos enviados
+  const sets: string[] = [];
+  const args: unknown[] = [];
+
+  if (diaPagoVal !== undefined || dia_pago === null) {
+    sets.push("dia_pago = ?");
+    args.push(dia_pago === null ? null : diaPagoVal);
+  }
+  if (mesPagoVal !== undefined || mes_pago === null) {
+    sets.push("mes_pago = ?");
+    args.push(mes_pago === null ? null : mesPagoVal);
+  }
+  if (frecuenciaVal !== undefined) {
+    sets.push("frecuencia_pago = ?");
+    args.push(frecuenciaVal);
+  }
+  if (estimadoVal !== undefined) {
+    sets.push("valor_estimado = ?");
+    args.push(estimadoVal);
+  }
+
+  if (sets.length === 0) {
+    return NextResponse.json({ error: "Nada que actualizar" }, { status: 400 });
+  }
+
+  args.push(id, user.id);
+  await db.execute({
+    sql: `UPDATE deudas SET ${sets.join(", ")} WHERE id = ? AND user_id = ?`,
+    args,
+  });
+
+  return NextResponse.json({ ok: true });
+}
+```
+
+- [ ] **Step 2: Crear `components/EditarResponsabilidad.tsx`**
+
+```tsx
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+
+interface Props {
+  deudaId: number;
+  frecuenciaActual: string;
+  diaPagoActual: number | null;
+  mesPagoActual: number | null;
+  valorEstimadoActual: number | null;
+}
+
+export default function EditarResponsabilidad({
+  deudaId,
+  frecuenciaActual,
+  diaPagoActual,
+  mesPagoActual,
+  valorEstimadoActual,
+}: Props) {
+  const router = useRouter();
+  const [abierto, setAbierto] = useState(false);
+  const [frecuencia, setFrecuencia] = useState(frecuenciaActual);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+    const form = new FormData(e.currentTarget);
+    const diaPago = form.get("dia_pago");
+    const mesPago = form.get("mes_pago");
+    const valorEstimado = form.get("valor_estimado");
+
+    const res = await fetch(`/api/deudas/${deudaId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        frecuencia_pago: frecuencia,
+        dia_pago: diaPago ? Number(diaPago) : null,
+        mes_pago: frecuencia === "anual" && mesPago ? Number(mesPago) : null,
+        valor_estimado: valorEstimado ? Number(valorEstimado) : null,
+      }),
+    });
+    setLoading(false);
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setError(data.error ?? "Error al guardar");
+      return;
+    }
+    setAbierto(false);
+    router.refresh();
+  }
+
+  if (!abierto) {
+    return (
+      <button className="btn-secundario" onClick={() => setAbierto(true)}>
+        Editar responsabilidad
+      </button>
+    );
+  }
+
+  return (
+    <form onSubmit={onSubmit} className="card">
+      <h3>Editar responsabilidad</h3>
+
+      <label>Frecuencia de pago</label>
+      <select value={frecuencia} onChange={(e) => setFrecuencia(e.target.value)}>
+        <option value="semanal">Semanal</option>
+        <option value="quincenal">Quincenal</option>
+        <option value="mensual">Mensual</option>
+        <option value="semestral">Semestral (cada 6 meses)</option>
+        <option value="anual">Anual</option>
+      </select>
+
+      <label>Valor estimado por pago (COP, opcional)</label>
+      <input
+        name="valor_estimado"
+        type="number"
+        min="0"
+        step="any"
+        defaultValue={valorEstimadoActual ?? ""}
+      />
+
+      <label>Día de pago (1–31)</label>
+      <input
+        name="dia_pago"
+        type="number"
+        min="1"
+        max="31"
+        defaultValue={diaPagoActual ?? ""}
+        placeholder="ej. 15"
+      />
+
+      {frecuencia === "anual" && (
+        <>
+          <label>Mes de vencimiento</label>
+          <select name="mes_pago" defaultValue={mesPagoActual ?? 1}>
+            <option value="1">Enero</option>
+            <option value="2">Febrero</option>
+            <option value="3">Marzo</option>
+            <option value="4">Abril</option>
+            <option value="5">Mayo</option>
+            <option value="6">Junio</option>
+            <option value="7">Julio</option>
+            <option value="8">Agosto</option>
+            <option value="9">Septiembre</option>
+            <option value="10">Octubre</option>
+            <option value="11">Noviembre</option>
+            <option value="12">Diciembre</option>
+          </select>
+        </>
+      )}
+
+      {error && <p className="error">{error}</p>}
+      <div style={{ display: "flex", gap: 8 }}>
+        <button disabled={loading}>{loading ? "Guardando..." : "Guardar"}</button>
+        <button type="button" onClick={() => setAbierto(false)}>Cancelar</button>
+      </div>
+    </form>
+  );
+}
+```
+
+- [ ] **Step 3: Agregar `EditarResponsabilidad` en `app/deudas/[id]/page.tsx`**
+
+Importar el componente:
+```tsx
+import EditarResponsabilidad from "@/components/EditarResponsabilidad";
+```
+
+Localizar la sección donde `deuda.es_propia` controla qué acciones se muestran (cerca de donde está `<NuevoPago>` y `<Compartir>`), y agregar el componente solo para responsabilidades propias:
+
+```tsx
+{deuda.es_propia && deuda.categoria === "responsabilidad" && (
+  <EditarResponsabilidad
+    deudaId={deuda.id}
+    frecuenciaActual={deuda.frecuencia_pago ?? "mensual"}
+    diaPagoActual={deuda.dia_pago}
+    mesPagoActual={deuda.mes_pago}
+    valorEstimadoActual={deuda.valor_estimado}
+  />
+)}
+```
+
+- [ ] **Step 4: Verificar que compila**
+
+```bash
+npx tsc --noEmit
+```
+
+Expected: sin errores.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add app/api/deudas/[id]/route.ts components/EditarResponsabilidad.tsx app/deudas/[id]/page.tsx
+git commit -m "feat: editar responsabilidad — dia_pago, mes_pago, frecuencia y valor_estimado"
+```
