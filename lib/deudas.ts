@@ -14,6 +14,8 @@ export interface Deuda {
   valor_estimado: number | null;
   tasa_interes: number | null;
   fecha_vencimiento: string | null;
+  dia_pago: number | null;
+  mes_pago: number | null;
 }
 
 // Devuelve la deuda solo si el usuario es dueño o tiene acceso compartido.
@@ -45,6 +47,8 @@ export async function getDeudaConAcceso(deudaId: string, userId: string) {
     valor_estimado: row.valor_estimado != null ? Number(row.valor_estimado) : null,
     tasa_interes: row.tasa_interes != null ? Number(row.tasa_interes) : null,
     fecha_vencimiento: row.fecha_vencimiento ? String(row.fecha_vencimiento) : null,
+    dia_pago: row.dia_pago != null ? Number(row.dia_pago) : null,
+    mes_pago: row.mes_pago != null ? Number(row.mes_pago) : null,
   } satisfies Deuda;
 }
 
@@ -76,5 +80,36 @@ export async function listDeudas(userId: string) {
     valor_estimado: row.valor_estimado != null ? Number(row.valor_estimado) : null,
     tasa_interes: row.tasa_interes != null ? Number(row.tasa_interes) : null,
     fecha_vencimiento: row.fecha_vencimiento ? String(row.fecha_vencimiento) : null,
+    dia_pago: row.dia_pago != null ? Number(row.dia_pago) : null,
+    mes_pago: row.mes_pago != null ? Number(row.mes_pago) : null,
+  }));
+}
+
+export interface Responsabilidad {
+  id: number;
+  descripcion: string;
+  frecuencia_pago: string;
+  valor_estimado: number | null;
+  dia_pago: number | null;
+  mes_pago: number | null;
+  created_at: string;
+}
+
+export async function listResponsabilidades(userId: string): Promise<Responsabilidad[]> {
+  const result = await db.execute({
+    sql: `SELECT id, descripcion, frecuencia_pago, valor_estimado, dia_pago, mes_pago, created_at
+          FROM deudas
+          WHERE user_id = ? AND categoria = 'responsabilidad' AND dia_pago IS NOT NULL
+          ORDER BY dia_pago`,
+    args: [userId],
+  });
+  return result.rows.map((r) => ({
+    id: Number(r.id),
+    descripcion: String(r.descripcion),
+    frecuencia_pago: String(r.frecuencia_pago ?? "mensual"),
+    valor_estimado: r.valor_estimado != null ? Number(r.valor_estimado) : null,
+    dia_pago: r.dia_pago != null ? Number(r.dia_pago) : null,
+    mes_pago: r.mes_pago != null ? Number(r.mes_pago) : null,
+    created_at: String(r.created_at),
   }));
 }

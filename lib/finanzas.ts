@@ -9,6 +9,8 @@ export interface Cuenta {
   moneda: string;
   saldo: number;
   estado: EstadoCuenta;
+  es_credito: boolean;
+  dia_pago_credito: number | null;
 }
 
 function rowToCuenta(r: Record<string, unknown>): Cuenta {
@@ -20,6 +22,8 @@ function rowToCuenta(r: Record<string, unknown>): Cuenta {
     moneda: String(r.moneda),
     saldo: Number(r.saldo),
     estado: (estado === "inactiva" || estado === "archivada" ? estado : "activa") as EstadoCuenta,
+    es_credito: Boolean(Number(r.es_credito ?? 0)),
+    dia_pago_credito: r.dia_pago_credito != null ? Number(r.dia_pago_credito) : null,
   };
 }
 
