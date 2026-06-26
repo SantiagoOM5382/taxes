@@ -22,10 +22,12 @@ export async function POST(req: NextRequest) {
     valor_estimado,
     tasa_interes,
     fecha_vencimiento,
+    dia_pago,
+    mes_pago,
   } = await req.json().catch(() => ({}));
 
   const cat = categoria === "responsabilidad" ? "responsabilidad" : "deuda";
-  const frecuencia = ["semanal", "quincenal", "mensual", "semestral"].includes(frecuencia_pago)
+  const frecuencia = ["semanal", "quincenal", "mensual", "semestral", "anual"].includes(frecuencia_pago)
     ? frecuencia_pago
     : null;
 
@@ -66,10 +68,19 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  const diaPagoVal = dia_pago != null && dia_pago !== "" ? Number(dia_pago) : null;
+  const mesPagoVal = mes_pago != null && mes_pago !== "" ? Number(mes_pago) : null;
+  if (diaPagoVal !== null && (diaPagoVal < 1 || diaPagoVal > 31 || !Number.isInteger(diaPagoVal))) {
+    return NextResponse.json({ error: "dia_pago debe ser entero entre 1 y 31" }, { status: 400 });
+  }
+  if (mesPagoVal !== null && (mesPagoVal < 1 || mesPagoVal > 12 || !Number.isInteger(mesPagoVal))) {
+    return NextResponse.json({ error: "mes_pago debe ser entero entre 1 y 12" }, { status: 400 });
+  }
+
   const result = await db.execute({
-    sql: `INSERT INTO deudas (user_id, descripcion, acreedor, monto_inicial, categoria, frecuencia_pago, valor_estimado, tasa_interes, fecha_vencimiento)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    args: [user.id, descripcion, acreedor || null, monto, cat, frecuencia, estimado, tasa, vence],
+    sql: `INSERT INTO deudas (user_id, descripcion, acreedor, monto_inicial, categoria, frecuencia_pago, valor_estimado, tasa_interes, fecha_vencimiento, dia_pago, mes_pago)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    args: [user.id, descripcion, acreedor || null, monto, cat, frecuencia, estimado, tasa, vence, diaPagoVal, mesPagoVal],
   });
   return NextResponse.json({ id: Number(result.lastInsertRowid) }, { status: 201 });
 }
