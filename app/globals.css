@@ -256,3 +256,185 @@ a.deuda-link { color: #2563eb; text-decoration: none; font-weight: 600; }
   .hero-sub { font-size: 15px; }
   .features { grid-template-columns: 1fr; }
 }
+
+/* Botón secundario */
+.btn-secundario {
+  background: #fff;
+  color: #2563eb;
+  border: 1px solid #2563eb;
+  padding: 7px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.btn-secundario:hover { background: #eff4ff; }
+
+/* Calendario — página */
+.calendario-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.calendario-header h1 { margin: 0; }
+.btn-toggle-vista {
+  background: #fff;
+  color: #2563eb;
+  border: 1px solid #2563eb;
+  padding: 7px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.btn-toggle-vista:hover { background: #eff4ff; }
+.calendario-nav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.calendario-nav button {
+  background: #fff;
+  color: #1f2430;
+  border: 1px solid #c9ccd6;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  font-size: 18px;
+  line-height: 1;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.calendario-nav button:hover { background: #f3f4f6; }
+.calendario-mes-label { font-size: 17px; font-weight: 700; min-width: 150px; text-align: center; }
+.cargando { color: #777; font-size: 14px; padding: 20px 0; }
+
+/* Calendario — vista lista */
+.calendario-lista { display: flex; flex-direction: column; gap: 20px; }
+.sin-datos { color: #777; font-size: 14px; padding: 24px 0; }
+.lista-grupo {}
+.lista-fecha {
+  font-size: 14px;
+  font-weight: 700;
+  color: #555;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #e2e4ea;
+  margin-bottom: 8px;
+}
+.lista-eventos { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.lista-evento { border-radius: 8px; overflow: hidden; }
+.lista-evento.pagado { opacity: 0.6; }
+.lista-evento-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: #fff;
+  border: 1px solid #e2e4ea;
+  border-radius: 8px;
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.15s;
+}
+.lista-evento-link:hover { background: #f3f4f6; }
+.evento-nombre { flex: 1; font-size: 14px; font-weight: 600; color: #1f2430; }
+.evento-monto { font-size: 13px; color: #555; white-space: nowrap; }
+.evento-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.badge-pagado { background: #dcfce7; color: #166534; }
+.badge-pendiente { background: #fee2e2; color: #991b1b; }
+
+/* Calendario — vista grilla */
+.calendario-grilla { background: #fff; border: 1px solid #e2e4ea; border-radius: 10px; overflow: hidden; }
+.grilla-header {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  background: #f8f9fb;
+  border-bottom: 1px solid #e2e4ea;
+}
+.grilla-dia-nombre {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #888;
+  text-transform: uppercase;
+  padding: 8px 4px;
+}
+.grilla-cuerpo {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+.grilla-celda {
+  min-height: 72px;
+  border-right: 1px solid #eceef3;
+  border-bottom: 1px solid #eceef3;
+  padding: 6px;
+  position: relative;
+}
+.grilla-celda.vacia { background: #fafafa; }
+.grilla-celda.con-eventos { background: #fff; }
+.celda-numero {
+  font-size: 12px;
+  color: #888;
+  font-weight: 600;
+  display: block;
+  margin-bottom: 4px;
+}
+.celda-dots { display: flex; gap: 4px; flex-wrap: wrap; }
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  cursor: pointer;
+}
+.dot.pendiente { background: #ef4444; }
+.dot.pagado { background: #22c55e; }
+.celda-tooltips {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 10;
+  background: #fff;
+  border: 1px solid #e2e4ea;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  min-width: 160px;
+  padding: 6px;
+  flex-direction: column;
+  gap: 4px;
+}
+.grilla-celda:hover .celda-tooltips { display: flex; }
+.celda-tooltip-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  border-radius: 6px;
+  text-decoration: none;
+  color: #1f2430;
+  font-size: 12px;
+  font-weight: 500;
+}
+.celda-tooltip-link:hover { background: #f3f4f6; }
+.dot-mini {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.dot-mini.pendiente { background: #ef4444; }
+.dot-mini.pagado { background: #22c55e; }
