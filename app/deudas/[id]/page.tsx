@@ -140,7 +140,7 @@ export default async function DeudaPage({
         )}
       </div>
 
-      {deuda.es_propia && deuda.categoria === "responsabilidad" && (
+      {deuda.es_propia && (
         <EditarResponsabilidad
           deudaId={deuda.id}
           frecuenciaActual={deuda.frecuencia_pago ?? "mensual"}

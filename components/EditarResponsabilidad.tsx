@@ -56,14 +56,14 @@ export default function EditarResponsabilidad({
   if (!abierto) {
     return (
       <button className="btn-secundario" onClick={() => setAbierto(true)}>
-        Editar responsabilidad
+        Configurar día de pago
       </button>
     );
   }
 
   return (
     <form onSubmit={onSubmit} className="card">
-      <h3>Editar responsabilidad</h3>
+      <h3>Configurar día de pago</h3>
 
       <label>Frecuencia de pago</label>
       <select value={frecuencia} onChange={(e) => setFrecuencia(e.target.value)}>
