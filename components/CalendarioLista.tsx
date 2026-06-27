@@ -5,8 +5,6 @@ import type { EventoCalendario } from "@/lib/calendario";
 
 interface Props {
   eventos: EventoCalendario[];
-  mes: number;
-  anio: number;
 }
 
 export default function CalendarioLista({ eventos }: Props) {

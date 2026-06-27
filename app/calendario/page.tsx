@@ -63,7 +63,7 @@ export default function CalendarioPage() {
       ) : vista === "grilla" ? (
         <CalendarioGrilla eventos={eventos} mes={mes} anio={anio} />
       ) : (
-        <CalendarioLista eventos={eventos} mes={mes} anio={anio} />
+        <CalendarioLista eventos={eventos} />
       )}
     </main>
   );

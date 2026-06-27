@@ -63,16 +63,28 @@ function estaPagada(
 
   switch (r.frecuencia_pago) {
     case "mensual":
-    case "quincenal":
       return pagosDeLaDeuda.some((p) => {
         const [pa, pm] = p.fecha_pago.split("-");
         return Number(pa) === anio && Number(pm) - 1 === mes;
       });
-    case "semestral": {
-      const sem = semestre(mes);
+    case "quincenal": {
+      const diaOcurrencia = Number(fecha.split("-")[2]);
       return pagosDeLaDeuda.some((p) => {
-        const [pa, pm] = p.fecha_pago.split("-");
-        return Number(pa) === anio && semestre(Number(pm) - 1) === sem;
+        const [pa, pm, pd] = p.fecha_pago.split("-");
+        if (Number(pa) !== anio || Number(pm) - 1 !== mes) return false;
+        const diaPago = Number(pd);
+        if (diaOcurrencia <= 15) return diaPago >= 1 && diaPago <= 15;
+        return diaPago >= 16;
+      });
+    }
+    case "semestral": {
+      const ocurrencia = new Date(fecha);
+      return pagosDeLaDeuda.some((p) => {
+        const fechaPago = new Date(p.fecha_pago);
+        const diffMeses =
+          (fechaPago.getFullYear() - ocurrencia.getFullYear()) * 12 +
+          (fechaPago.getMonth() - ocurrencia.getMonth());
+        return Math.abs(diffMeses) < 3;
       });
     }
     case "anual":
