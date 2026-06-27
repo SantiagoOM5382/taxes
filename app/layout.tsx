@@ -16,6 +16,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <div className="user">
               <Link href="/asesor">Asesor IA</Link>
               <Link href="/finanzas">Mis Finanzas</Link>
+              <Link href="/calendario">Calendario</Link>
               <span>{user.nombre}</span>
               <LogoutButton />
             </div>
