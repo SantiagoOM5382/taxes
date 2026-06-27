@@ -106,6 +106,9 @@ export default function FinanzasTabs({
                   <tr key={c.id}>
                     <td>
                       {c.nombre}{" "}
+                      {c.es_credito && c.dia_pago_credito && (
+                        <span className="badge credito">Pago: día {c.dia_pago_credito}</span>
+                      )}{" "}
                       {c.estado === "inactiva" && <span className="badge inactiva">desactivada</span>}
                     </td>
                     <td>{c.tipo}</td>
@@ -138,7 +141,12 @@ export default function FinanzasTabs({
                 <tbody>
                   {archivadas.map((c) => (
                     <tr key={c.id} style={{ opacity: 0.65 }}>
-                      <td>{c.nombre}</td>
+                      <td>
+                        {c.nombre}{" "}
+                        {c.es_credito && c.dia_pago_credito && (
+                          <span className="badge credito">Pago: día {c.dia_pago_credito}</span>
+                        )}
+                      </td>
                       <td>{c.tipo}</td>
                       <td>{c.moneda}</td>
                       <td className="monto">{fmt(c.moneda, c.saldo)}</td>
