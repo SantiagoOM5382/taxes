@@ -6,6 +6,7 @@ import { getDeudaConAcceso } from "@/lib/deudas";
 import NuevoPago from "@/components/NuevoPago";
 import Compartir from "@/components/Compartir";
 import SubirComprobante from "@/components/SubirComprobante";
+import EditarResponsabilidad from "@/components/EditarResponsabilidad";
 import { storageConfigurado } from "@/lib/storage";
 import { listCuentas } from "@/lib/finanzas";
 
@@ -138,6 +139,16 @@ export default async function DeudaPage({
           </table>
         )}
       </div>
+
+      {deuda.es_propia && deuda.categoria === "responsabilidad" && (
+        <EditarResponsabilidad
+          deudaId={deuda.id}
+          frecuenciaActual={deuda.frecuencia_pago ?? "mensual"}
+          diaPagoActual={deuda.dia_pago}
+          mesPagoActual={deuda.mes_pago}
+          valorEstimadoActual={deuda.valor_estimado}
+        />
+      )}
 
       {deuda.es_propia && (
         <>
