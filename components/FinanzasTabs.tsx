@@ -7,6 +7,8 @@ import NuevoIngreso from "./NuevoIngreso";
 import NuevoMovimiento from "./NuevoMovimiento";
 import EliminarIngreso from "./EliminarIngreso";
 import CuentaAcciones from "./CuentaAcciones";
+import EditarCuenta from "./EditarCuenta";
+import PagarTarjeta from "./PagarTarjeta";
 import type { Cuenta } from "@/lib/finanzas";
 
 interface Ingreso {
@@ -91,38 +93,50 @@ export default function FinanzasTabs({
           {visibles.length === 0 ? (
             <p className="muted">Registra tus cuentas: Nequi, Bancolombia, Binance, efectivo...</p>
           ) : (
-            <table>
-              <thead>
-                <tr>
-                  <th>Cuenta</th>
-                  <th>Tipo</th>
-                  <th>Moneda</th>
-                  <th>Saldo</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {visibles.map((c) => (
-                  <tr key={c.id}>
-                    <td>
-                      {c.nombre}{" "}
-                      {c.es_credito && c.dia_pago_credito && (
-                        <span className="badge credito">Pago: día {c.dia_pago_credito}</span>
-                      )}{" "}
-                      {c.estado === "inactiva" && <span className="badge inactiva">desactivada</span>}
-                    </td>
-                    <td>{c.tipo}</td>
-                    <td>{c.moneda}</td>
-                    <td className={`monto ${c.saldo < 0 ? "negativo" : ""}`}>
-                      {fmt(c.moneda, c.saldo)}
-                    </td>
-                    <td>
-                      <CuentaAcciones cuenta={c} />
-                    </td>
+            <>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Cuenta</th>
+                    <th>Tipo</th>
+                    <th>Moneda</th>
+                    <th>Saldo</th>
+                    <th></th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {visibles.map((c) => (
+                    <tr key={c.id}>
+                      <td>
+                        {c.nombre}{" "}
+                        {c.es_credito && c.dia_pago_credito && (
+                          <span className="badge credito">Pago: día {c.dia_pago_credito}</span>
+                        )}{" "}
+                        {c.estado === "inactiva" && <span className="badge inactiva">desactivada</span>}
+                      </td>
+                      <td>{c.tipo}</td>
+                      <td>{c.moneda}</td>
+                      <td className={`monto ${c.saldo < 0 ? "negativo" : ""}`}>
+                        {fmt(c.moneda, c.saldo)}
+                      </td>
+                      <td style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+                        <CuentaAcciones cuenta={c} />
+                        <EditarCuenta
+                          cuentaId={c.id}
+                          esCreditoActual={c.es_credito}
+                          diaPagoActual={c.dia_pago_credito}
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {activas.filter((c) => c.es_credito).map((c) => (
+                <div key={c.id} style={{ marginTop: 12 }}>
+                  <PagarTarjeta tarjeta={c} cuentas={cuentas} />
+                </div>
+              ))}
+            </>
           )}
 
           {archivadas.length > 0 && (

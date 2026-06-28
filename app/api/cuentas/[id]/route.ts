@@ -16,17 +16,38 @@ export async function PATCH(
   const cuenta = await getCuenta(Number(id), user.id);
   if (!cuenta) return NextResponse.json({ error: "Cuenta no encontrada" }, { status: 404 });
 
-  const { estado } = await req.json().catch(() => ({}));
-  if (!ESTADOS.includes(estado)) {
-    return NextResponse.json(
-      { error: `estado debe ser: ${ESTADOS.join(", ")}` },
-      { status: 400 }
-    );
+  const body = await req.json().catch(() => ({}));
+  const sets: string[] = [];
+  const args: (string | number | null)[] = [];
+
+  if (body.estado !== undefined) {
+    if (!ESTADOS.includes(body.estado)) {
+      return NextResponse.json({ error: `estado debe ser: ${ESTADOS.join(", ")}` }, { status: 400 });
+    }
+    sets.push("estado = ?");
+    args.push(body.estado);
   }
 
+  if (body.es_credito !== undefined) {
+    sets.push("es_credito = ?");
+    args.push(body.es_credito ? 1 : 0);
+  }
+
+  if (body.dia_pago_credito !== undefined) {
+    const dia = body.dia_pago_credito === null ? null : Number(body.dia_pago_credito);
+    if (dia !== null && (!Number.isInteger(dia) || dia < 1 || dia > 31)) {
+      return NextResponse.json({ error: "dia_pago_credito debe ser entero entre 1 y 31" }, { status: 400 });
+    }
+    sets.push("dia_pago_credito = ?");
+    args.push(dia);
+  }
+
+  if (sets.length === 0) return NextResponse.json({ error: "Nada que actualizar" }, { status: 400 });
+
+  args.push(cuenta.id, user.id);
   await db.execute({
-    sql: "UPDATE cuentas SET estado = ? WHERE id = ? AND user_id = ?",
-    args: [estado, cuenta.id, user.id],
+    sql: `UPDATE cuentas SET ${sets.join(", ")} WHERE id = ? AND user_id = ?`,
+    args,
   });
-  return NextResponse.json({ ok: true, estado });
+  return NextResponse.json({ ok: true });
 }
