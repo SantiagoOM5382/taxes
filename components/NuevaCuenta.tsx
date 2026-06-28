@@ -25,6 +25,7 @@ export default function NuevaCuenta({ onSuccess }: { onSuccess?: () => void }) {
         saldo: form.get("saldo") || 0,
         es_credito: esCredito,
         dia_pago_credito: esCredito ? form.get("dia_pago_credito") : null,
+        limite_credito: esCredito && form.get("limite_credito") ? Number(form.get("limite_credito")) : null,
       }),
     });
     setLoading(false);
@@ -70,6 +71,14 @@ export default function NuevaCuenta({ onSuccess }: { onSuccess?: () => void }) {
 
       {esCredito && (
         <>
+          <label>Cupo total (COP)</label>
+          <input
+            name="limite_credito"
+            type="number"
+            min="0"
+            step="any"
+            placeholder="ej. 200000"
+          />
           <label>Día de pago (1–31)</label>
           <input
             name="dia_pago_credito"

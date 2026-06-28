@@ -118,6 +118,11 @@ export default function FinanzasTabs({
                       <td>{c.moneda}</td>
                       <td className={`monto ${c.saldo < 0 ? "negativo" : ""}`}>
                         {fmt(c.moneda, c.saldo)}
+                        {c.es_credito && c.limite_credito != null && (
+                          <div style={{ fontSize: 11, color: "#888", fontWeight: "normal" }}>
+                            Cupo: {fmt(c.moneda, c.limite_credito)} | Disponible: {fmt(c.moneda, c.saldo)}
+                          </div>
+                        )}
                       </td>
                       <td style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
                         <CuentaAcciones cuenta={c} />
@@ -125,6 +130,7 @@ export default function FinanzasTabs({
                           cuentaId={c.id}
                           esCreditoActual={c.es_credito}
                           diaPagoActual={c.dia_pago_credito}
+                          limiteCreditoActual={c.limite_credito}
                         />
                       </td>
                     </tr>

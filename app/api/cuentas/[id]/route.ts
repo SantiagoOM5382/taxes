@@ -42,6 +42,15 @@ export async function PATCH(
     args.push(dia);
   }
 
+  if (body.limite_credito !== undefined) {
+    const limite = body.limite_credito === null ? null : Number(body.limite_credito);
+    if (limite !== null && (!Number.isFinite(limite) || limite < 0)) {
+      return NextResponse.json({ error: "limite_credito debe ser >= 0" }, { status: 400 });
+    }
+    sets.push("limite_credito = ?");
+    args.push(limite);
+  }
+
   if (sets.length === 0) return NextResponse.json({ error: "Nada que actualizar" }, { status: 400 });
 
   args.push(cuenta.id, user.id);

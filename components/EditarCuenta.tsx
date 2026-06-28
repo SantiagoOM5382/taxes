@@ -7,9 +7,10 @@ interface Props {
   cuentaId: number;
   esCreditoActual: boolean;
   diaPagoActual: number | null;
+  limiteCreditoActual: number | null;
 }
 
-export default function EditarCuenta({ cuentaId, esCreditoActual, diaPagoActual }: Props) {
+export default function EditarCuenta({ cuentaId, esCreditoActual, diaPagoActual, limiteCreditoActual }: Props) {
   const router = useRouter();
   const [abierto, setAbierto] = useState(false);
   const [esCredito, setEsCredito] = useState(esCreditoActual);
@@ -22,12 +23,14 @@ export default function EditarCuenta({ cuentaId, esCreditoActual, diaPagoActual 
     setLoading(true);
     const form = new FormData(e.currentTarget);
     const diaPago = form.get("dia_pago_credito");
+    const limite = form.get("limite_credito");
     const res = await fetch(`/api/cuentas/${cuentaId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         es_credito: esCredito,
         dia_pago_credito: esCredito && diaPago ? Number(diaPago) : null,
+        limite_credito: esCredito && limite ? Number(limite) : null,
       }),
     });
     setLoading(false);
@@ -60,6 +63,15 @@ export default function EditarCuenta({ cuentaId, esCreditoActual, diaPagoActual 
       </label>
       {esCredito && (
         <>
+          <label>Cupo total (COP)</label>
+          <input
+            name="limite_credito"
+            type="number"
+            min="0"
+            step="any"
+            defaultValue={limiteCreditoActual ?? ""}
+            placeholder="ej. 200000"
+          />
           <label>Día de pago (1–31)</label>
           <input
             name="dia_pago_credito"
