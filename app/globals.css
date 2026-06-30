@@ -445,7 +445,7 @@ a.deuda-link { color: #2563eb; text-decoration: none; font-weight: 600; }
 /* KPI grid */
 .kpi-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 16px;
   margin-bottom: 24px;
 }

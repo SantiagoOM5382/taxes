@@ -215,12 +215,19 @@ export default async function Home() {
                     <div className="item-name">{d.descripcion}</div>
                     <div className="item-sub">de {d.dueno}</div>
                   </div>
-                  <div className="item-amount" style={{ color: d.categoria === "deuda" ? "#b91c1c" : "#0f172a" }}>
-                    {d.categoria === "deuda"
-                      ? cop.format(d.monto_actual)
-                      : d.valor_estimado != null
-                        ? cop.format(d.valor_estimado)
-                        : "variable"}
+                  <div>
+                    <div className="item-amount" style={{ color: d.categoria === "deuda" ? "#b91c1c" : "#0f172a" }}>
+                      {d.categoria === "deuda"
+                        ? cop.format(d.monto_actual)
+                        : d.valor_estimado != null
+                          ? cop.format(d.valor_estimado)
+                          : "variable"}
+                    </div>
+                    {d.categoria === "responsabilidad" && (
+                      <div className="item-progress-label" style={{ textAlign: "right" }}>
+                        pagado: {cop.format(d.total_pagado)}
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
