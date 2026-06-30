@@ -1,11 +1,12 @@
 import type { Responsabilidad } from "./deudas";
 
 export interface EventoCalendario {
-  deuda_id: number;
+  deuda_id: number;      // negativo = cuenta (tarjeta de crédito)
   nombre: string;
   monto_estimado: number | null;
   fecha: string; // YYYY-MM-DD
   pagado: boolean;
+  tipo?: "deuda" | "tarjeta";
 }
 
 function toISO(anio: number, mes: number, dia: number): string {
@@ -16,32 +17,36 @@ function ultimoDiaMes(anio: number, mes: number): number {
   return new Date(anio, mes + 1, 0).getDate();
 }
 
-function semestre(mes: number): number {
-  return mes <= 5 ? 0 : 1;
-}
-
-// Devuelve qué días del mes (0-indexed) ocurre esta responsabilidad
+// Devuelve qué días del mes ocurre esta responsabilidad, usando dia_pago como ancla
 function diasEnMes(r: Responsabilidad, mes: number, anio: number): number[] {
   if (!r.dia_pago) return [];
   const ult = ultimoDiaMes(anio, mes);
+  const dia = Math.min(r.dia_pago, ult);
 
   switch (r.frecuencia_pago) {
     case "mensual":
-      return [Math.min(r.dia_pago, ult)];
-    case "quincenal":
-      return [Math.min(15, ult), ult];
+      return [dia];
+    case "quincenal": {
+      const segunda = r.dia_pago + 15;
+      return segunda <= ult ? [dia, segunda] : [dia];
+    }
+    case "semanal": {
+      const dias: number[] = [];
+      for (let d = dia; d >= 1; d -= 7) dias.unshift(d);
+      for (let d = dia + 7; d <= ult; d += 7) dias.push(d);
+      return dias;
+    }
     case "semestral": {
       const creado = new Date(r.created_at);
       const mesInicio = creado.getMonth();
-      // Ocurre en meses que son múltiplo de 6 desde el mes de creación
       const diff = (mes - mesInicio + 12) % 12;
       if (diff % 6 !== 0) return [];
-      return [Math.min(r.dia_pago, ult)];
+      return [dia];
     }
     case "anual": {
       if (r.mes_pago == null) return [];
       if (mes !== r.mes_pago - 1) return [];
-      return [Math.min(r.dia_pago, ult)];
+      return [dia];
     }
     default:
       return [];
@@ -69,12 +74,22 @@ function estaPagada(
       });
     case "quincenal": {
       const diaOcurrencia = Number(fecha.split("-")[2]);
+      const mitad = r.dia_pago ?? 15;
       return pagosDeLaDeuda.some((p) => {
         const [pa, pm, pd] = p.fecha_pago.split("-");
         if (Number(pa) !== anio || Number(pm) - 1 !== mes) return false;
         const diaPago = Number(pd);
-        if (diaOcurrencia <= 15) return diaPago >= 1 && diaPago <= 15;
-        return diaPago >= 16;
+        if (diaOcurrencia <= mitad) return diaPago >= 1 && diaPago <= mitad;
+        return diaPago > mitad;
+      });
+    }
+    case "semanal": {
+      const diaOcurrencia = Number(fecha.split("-")[2]);
+      return pagosDeLaDeuda.some((p) => {
+        const [pa, pm, pd] = p.fecha_pago.split("-");
+        if (Number(pa) !== anio || Number(pm) - 1 !== mes) return false;
+        const diaPago = Number(pd);
+        return Math.abs(diaPago - diaOcurrencia) < 7;
       });
     }
     case "semestral": {

@@ -357,7 +357,7 @@ a.deuda-link { color: #2563eb; text-decoration: none; font-weight: 600; }
 .badge-pendiente { background: #fee2e2; color: #991b1b; }
 
 /* Calendario — vista grilla */
-.calendario-grilla { background: #fff; border: 1px solid #e2e4ea; border-radius: 10px; overflow: hidden; }
+.calendario-grilla { background: #fff; border: 1px solid #e2e4ea; border-radius: 10px; overflow: visible; }
 .grilla-header {
   display: grid;
   grid-template-columns: repeat(7, 1fr);

@@ -37,5 +37,27 @@ export async function GET(req: NextRequest) {
   }
 
   const eventos = generarOcurrencias(responsabilidades, pagos, mesParam, anioParam);
+
+  // Agregar días de pago de tarjetas de crédito
+  const tarjetasRes = await db.execute({
+    sql: "SELECT id, nombre, dia_pago_credito FROM cuentas WHERE user_id = ? AND es_credito = 1 AND dia_pago_credito IS NOT NULL AND estado != 'archivada'",
+    args: [user.id],
+  });
+  const ult = new Date(anioParam, mesParam + 1, 0).getDate();
+  for (const t of tarjetasRes.rows) {
+    const dia = Math.min(Number(t.dia_pago_credito), ult);
+    const mm = String(mesParam + 1).padStart(2, "0");
+    const dd = String(dia).padStart(2, "0");
+    eventos.push({
+      deuda_id: -Number(t.id),
+      nombre: `Pago ${t.nombre}`,
+      monto_estimado: null,
+      fecha: `${anioParam}-${mm}-${dd}`,
+      pagado: false,
+      tipo: "tarjeta",
+    });
+  }
+
+  eventos.sort((a, b) => a.fecha.localeCompare(b.fecha));
   return NextResponse.json({ eventos });
 }

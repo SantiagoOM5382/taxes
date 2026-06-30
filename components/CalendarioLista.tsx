@@ -35,7 +35,7 @@ export default function CalendarioLista({ eventos }: Props) {
           <ul className="lista-eventos">
             {evs.map((ev) => (
               <li key={`${ev.deuda_id}-${fecha}`} className={`lista-evento ${ev.pagado ? "pagado" : "pendiente"}`}>
-                <Link href={`/deudas/${ev.deuda_id}`} className="lista-evento-link">
+                <Link href={ev.tipo === "tarjeta" ? "/finanzas" : `/deudas/${ev.deuda_id}`} className="lista-evento-link">
                   <span className="evento-nombre">{ev.nombre}</span>
                   <span className="evento-monto">{formatMonto(ev.monto_estimado)}</span>
                   <span className={`evento-badge ${ev.pagado ? "badge-pagado" : "badge-pendiente"}`}>

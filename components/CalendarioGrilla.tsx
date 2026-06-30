@@ -54,7 +54,7 @@ export default function CalendarioGrilla({ eventos, mes, anio }: Props) {
               {evs.length > 0 && (
                 <div className="celda-tooltips">
                   {evs.map((ev) => (
-                    <Link key={ev.deuda_id} href={`/deudas/${ev.deuda_id}`} className="celda-tooltip-link">
+                    <Link key={ev.deuda_id} href={ev.tipo === "tarjeta" ? "/finanzas" : `/deudas/${ev.deuda_id}`} className="celda-tooltip-link">
                       <span className={`dot-mini ${ev.pagado ? "pagado" : "pendiente"}`} />
                       {ev.nombre}
                     </Link>
