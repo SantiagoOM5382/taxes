@@ -160,85 +160,80 @@ export default async function Home() {
       </div>
 
       <div className="card">
-        <h2>Responsabilidades (pagos permanentes)</h2>
+        <div className="section-header">
+          <h2>Responsabilidades</h2>
+          {responsabilidades.length > 0 && (
+            <span className="section-count">({responsabilidades.length})</span>
+          )}
+        </div>
         {responsabilidades.length === 0 ? (
-          <p className="muted">Sin responsabilidades registradas (arriendo, servicios, comida...).</p>
+          <div className="empty-state">Sin responsabilidades registradas</div>
         ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>Descripción</th>
-                <th>A quién</th>
-                <th>Frecuencia</th>
-                <th>Valor estimado</th>
-                <th>Pagado histórico</th>
-              </tr>
-            </thead>
-            <tbody>
-              {responsabilidades.map((d) => (
-                <tr key={d.id}>
-                  <td>
-                    <Link className="deuda-link" href={`/deudas/${d.id}`}>
-                      {d.descripcion}
-                    </Link>
-                  </td>
-                  <td>{d.acreedor ?? "—"}</td>
-                  <td>{d.frecuencia_pago ?? "—"}</td>
-                  <td className="monto">
-                    {d.valor_estimado != null ? cop.format(d.valor_estimado) : "variable"}
-                  </td>
-                  <td className="monto">{cop.format(d.total_pagado)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="items-grid">
+            {responsabilidades.map((d) => (
+              <Link key={d.id} className="item-card" href={`/deudas/${d.id}`}>
+                <div className="item-card-header">
+                  <div>
+                    <div className="item-name">{d.descripcion}</div>
+                    {d.acreedor && <div className="item-sub">{d.acreedor}</div>}
+                  </div>
+                  <div>
+                    <div className="item-amount" style={{ color: "#0f172a" }}>
+                      {d.valor_estimado != null ? cop.format(d.valor_estimado) : "variable"}
+                    </div>
+                    <div className="item-progress-label" style={{ textAlign: "right" }}>
+                      pagado: {cop.format(d.total_pagado)}
+                    </div>
+                  </div>
+                </div>
+                {d.frecuencia_pago && (
+                  <span className="freq-badge freq-resp">{d.frecuencia_pago}</span>
+                )}
+              </Link>
+            ))}
+          </div>
         )}
       </div>
 
       <div className="card">
-        <h2>Deudas compartidas conmigo</h2>
+        <div className="section-header">
+          <h2>Deudas compartidas conmigo</h2>
+          {compartidas.length > 0 && (
+            <span className="section-count">({compartidas.length})</span>
+          )}
+        </div>
         {compartidas.length === 0 ? (
-          <p className="muted">Nadie te ha compartido el seguimiento de una deuda todavía.</p>
+          <div className="empty-state">Nadie te ha compartido una deuda todavía</div>
         ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>Descripción</th>
-                <th>Dueño</th>
-                <th>Frecuencia</th>
-                <th>Inicial / estimado</th>
-                <th>Actual / pagado</th>
-              </tr>
-            </thead>
-            <tbody>
-              {compartidas.map((d) => (
-                <tr key={d.id}>
-                  <td>
-                    <Link className="deuda-link" href={`/deudas/${d.id}`}>
-                      {d.descripcion}
-                    </Link>{" "}
-                    {d.categoria === "responsabilidad" && (
-                      <span className="badge responsabilidad">responsabilidad</span>
-                    )}
-                  </td>
-                  <td>{d.dueno}</td>
-                  <td>{d.frecuencia_pago ?? "—"}</td>
-                  <td className="monto">
+          <div className="items-grid">
+            {compartidas.map((d) => (
+              <Link key={d.id} className="item-card" href={`/deudas/${d.id}`}>
+                <div className="item-card-header">
+                  <div>
+                    <div className="item-name">{d.descripcion}</div>
+                    <div className="item-sub">de {d.dueno}</div>
+                  </div>
+                  <div className="item-amount" style={{ color: d.categoria === "deuda" ? "#b91c1c" : "#0f172a" }}>
                     {d.categoria === "deuda"
-                      ? cop.format(d.monto_inicial)
+                      ? cop.format(d.monto_actual)
                       : d.valor_estimado != null
                         ? cop.format(d.valor_estimado)
                         : "variable"}
-                  </td>
-                  <td className="monto">
-                    {d.categoria === "deuda"
-                      ? cop.format(d.monto_actual)
-                      : cop.format(d.total_pagado)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
+                  {d.frecuencia_pago && (
+                    <span className={`freq-badge ${d.categoria === "deuda" ? "freq-deuda" : "freq-resp"}`}>
+                      {d.frecuencia_pago}
+                    </span>
+                  )}
+                  {d.categoria === "responsabilidad" && (
+                    <span className="badge responsabilidad">responsabilidad</span>
+                  )}
+                </div>
+              </Link>
+            ))}
+          </div>
         )}
       </div>
     </main>
