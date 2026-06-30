@@ -5,6 +5,7 @@ import { listDeudas } from "@/lib/deudas";
 import { listCuentas, ensureCuentaEfectivo } from "@/lib/finanzas";
 import { getTasasCOP } from "@/lib/tasas";
 import NuevaDeudaBoton from "@/components/NuevaDeudaBoton";
+import DeudasArchivadas from "@/components/DeudasArchivadas";
 
 const cop = new Intl.NumberFormat("es-CO", {
   style: "currency",
@@ -30,7 +31,12 @@ export default async function Home() {
     getTasasCOP(),
   ]);
   const cuentas = todasCuentas.filter((c) => c.estado !== "archivada");
-  const deudas = todas.filter((d) => d.categoria === "deuda" && d.es_propia);
+  const deudas = todas.filter(
+    (d) => d.categoria === "deuda" && d.es_propia && d.estado !== "archivada"
+  );
+  const deudasArchivadas = todas.filter(
+    (d) => d.categoria === "deuda" && d.es_propia && d.estado === "archivada"
+  );
   const responsabilidades = todas.filter(
     (d) => d.categoria === "responsabilidad" && d.es_propia
   );
@@ -161,6 +167,7 @@ export default async function Home() {
               })}
             </div>
           )}
+          <DeudasArchivadas deudas={deudasArchivadas} />
         </div>
 
         <div className="card">
