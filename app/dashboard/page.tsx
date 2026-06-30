@@ -65,14 +65,16 @@ export default async function Home() {
 
   return (
     <main>
-      <div className="panel-header">
-        <h1>Hola, {user.nombre}</h1>
+      <div className="panel-header" style={{ marginBottom: 20 }}>
+        <h1 style={{ fontSize: 22, fontWeight: 700, color: "#0f172a" }}>
+          Hola, {user.nombre} 👋
+        </h1>
         <div style={{ display: "flex", gap: 8 }}>
           <NuevaDeudaBoton />
-          <Link className="boton" href="/asesor">
+          <Link className="boton" href="/asesor" style={{ background: "#7c3aed" }}>
             🤖 Asesor IA
           </Link>
-          <Link className="boton" href="/finanzas">
+          <Link className="boton" href="/finanzas" style={{ background: "#0f172a", border: "1px solid #334155" }}>
             Finanzas
           </Link>
         </div>
