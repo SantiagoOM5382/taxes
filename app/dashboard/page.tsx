@@ -119,36 +119,43 @@ export default async function Home() {
       </div>
 
       <div className="card">
-        <h2>Deudas</h2>
+        <div className="section-header">
+          <h2>Deudas</h2>
+          {deudas.length > 0 && <span className="section-count">({deudas.length})</span>}
+        </div>
         {deudas.length === 0 ? (
-          <p className="muted">No tienes deudas registradas.</p>
+          <div className="empty-state">No tenés deudas registradas ✓</div>
         ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>Descripción</th>
-                <th>Acreedor</th>
-                <th>Frecuencia</th>
-                <th>Inicial</th>
-                <th>Actual</th>
-              </tr>
-            </thead>
-            <tbody>
-              {deudas.map((d) => (
-                <tr key={d.id}>
-                  <td>
-                    <Link className="deuda-link" href={`/deudas/${d.id}`}>
-                      {d.descripcion}
-                    </Link>
-                  </td>
-                  <td>{d.acreedor ?? "—"}</td>
-                  <td>{d.frecuencia_pago ?? "—"}</td>
-                  <td className="monto">{cop.format(d.monto_inicial)}</td>
-                  <td className="monto">{cop.format(d.monto_actual)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="items-grid">
+            {deudas.map((d) => {
+              const pct = d.monto_inicial > 0
+                ? Math.round(((d.monto_inicial - d.monto_actual) / d.monto_inicial) * 100)
+                : 100;
+              return (
+                <Link key={d.id} className="item-card" href={`/deudas/${d.id}`}>
+                  <div className="item-card-header">
+                    <div>
+                      <div className="item-name">{d.descripcion}</div>
+                      {d.acreedor && <div className="item-sub">{d.acreedor}</div>}
+                    </div>
+                    <div className="item-amount" style={{ color: "#b91c1c" }}>
+                      {cop.format(d.monto_actual)}
+                    </div>
+                  </div>
+                  {d.frecuencia_pago && (
+                    <span className="freq-badge freq-deuda">{d.frecuencia_pago}</span>
+                  )}
+                  <div className="progress-bar" style={{ marginTop: 10 }}>
+                    <div
+                      className="progress-bar-fill"
+                      style={{ width: `${pct}%`, background: "#22c55e" }}
+                    />
+                  </div>
+                  <div className="item-progress-label">{pct}% pagado</div>
+                </Link>
+              );
+            })}
+          </div>
         )}
       </div>
 
