@@ -10,6 +10,7 @@ export interface Deuda {
   monto_actual: number;
   es_propia: boolean;
   categoria: "deuda" | "responsabilidad";
+  estado: "activa" | "archivada";
   frecuencia_pago: string | null;
   valor_estimado: number | null;
   tasa_interes: number | null;
@@ -43,6 +44,7 @@ export async function getDeudaConAcceso(deudaId: string, userId: string) {
     monto_actual: Number(row.monto_inicial) - Number(row.total_pagado),
     es_propia: Boolean(Number(row.es_propia)),
     categoria: row.categoria === "responsabilidad" ? "responsabilidad" : "deuda",
+    estado: (row.estado === "archivada" ? "archivada" : "activa") as "activa" | "archivada",
     frecuencia_pago: row.frecuencia_pago ? String(row.frecuencia_pago) : null,
     valor_estimado: row.valor_estimado != null ? Number(row.valor_estimado) : null,
     tasa_interes: row.tasa_interes != null ? Number(row.tasa_interes) : null,
@@ -76,6 +78,7 @@ export async function listDeudas(userId: string) {
     categoria: (row.categoria === "responsabilidad" ? "responsabilidad" : "deuda") as
       | "deuda"
       | "responsabilidad",
+    estado: (row.estado === "archivada" ? "archivada" : "activa") as "activa" | "archivada",
     frecuencia_pago: row.frecuencia_pago ? String(row.frecuencia_pago) : null,
     valor_estimado: row.valor_estimado != null ? Number(row.valor_estimado) : null,
     tasa_interes: row.tasa_interes != null ? Number(row.tasa_interes) : null,
