@@ -57,6 +57,12 @@ export default async function Home() {
   ].filter(Boolean);
   const deudaTotal = deudas.reduce((s, d) => s + d.monto_actual, 0);
 
+  const tarjetas = cuentas.filter((c) => c.es_credito && c.limite_credito != null);
+  const cupoTotal = tarjetas.reduce((s, c) => s + (c.limite_credito ?? 0), 0);
+  const cupoDisponible = tarjetas.reduce((s, c) => s + Math.max(0, c.saldo), 0);
+  const cupoUsado = cupoTotal - cupoDisponible;
+  const pctUsado = cupoTotal > 0 ? Math.round((cupoUsado / cupoTotal) * 100) : 0;
+
   return (
     <main>
       <div className="panel-header">
@@ -72,20 +78,44 @@ export default async function Home() {
         </div>
       </div>
 
-      <div className="card resumen">
-        <div>
-          <span className="muted">Saldo total</span>
-          <strong className="monto">{cop.format(saldoTotal)}</strong>
+      <div className="kpi-grid">
+        {/* Saldo total */}
+        <div className="kpi-card" style={{ borderLeftColor: "#22c55e" }}>
+          <div className="kpi-label">💰 Saldo total</div>
+          <div className="kpi-value">{cop.format(saldoTotal)}</div>
           {extranjeras.length > 0 && (
-            <span className="muted">incluye {extranjeras.join(" y ")}</span>
+            <div className="kpi-sub">incluye {extranjeras.join(" y ")}</div>
           )}
         </div>
-        <div>
-          <span className="muted">Deuda total actual</span>
-          <strong className="monto" style={{ color: deudaTotal > 0 ? "#b91c1c" : "#166534" }}>
+
+        {/* Deuda total */}
+        <div className="kpi-card" style={{ borderLeftColor: deudaTotal > 0 ? "#ef4444" : "#22c55e" }}>
+          <div className="kpi-label">⚠️ Deuda total</div>
+          <div className="kpi-value" style={{ color: deudaTotal > 0 ? "#b91c1c" : "#166534" }}>
             {cop.format(deudaTotal)}
-          </strong>
+          </div>
+          {deudaTotal === 0 && <div className="kpi-sub">¡Sin deudas! 🎉</div>}
         </div>
+
+        {/* Crédito disponible — solo si hay tarjetas */}
+        {cupoTotal > 0 && (
+          <div className="kpi-card" style={{ borderLeftColor: "#3b82f6" }}>
+            <div className="kpi-label">💳 Crédito disponible</div>
+            <div className="kpi-value" style={{ color: pctUsado > 80 ? "#b91c1c" : "#0f172a" }}>
+              {cop.format(cupoDisponible)}
+            </div>
+            <div className="kpi-sub">{pctUsado}% utilizado de {cop.format(cupoTotal)}</div>
+            <div className="progress-bar">
+              <div
+                className="progress-bar-fill"
+                style={{
+                  width: `${pctUsado}%`,
+                  background: pctUsado > 80 ? "#ef4444" : pctUsado > 50 ? "#f59e0b" : "#3b82f6",
+                }}
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="card">
