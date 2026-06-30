@@ -36,9 +36,10 @@ export default async function Home() {
   );
   const compartidas = todas.filter((d) => !d.es_propia);
 
-  const saldoCOP = cuentas.filter((c) => c.moneda === "COP").reduce((s, c) => s + c.saldo, 0);
-  const saldoUSD = cuentas.filter((c) => c.moneda === "USD").reduce((s, c) => s + c.saldo, 0);
-  const saldoEUR = cuentas.filter((c) => c.moneda === "EUR").reduce((s, c) => s + c.saldo, 0);
+  const cuentasLiquidas = cuentas.filter((c) => !c.es_credito);
+  const saldoCOP = cuentasLiquidas.filter((c) => c.moneda === "COP").reduce((s, c) => s + c.saldo, 0);
+  const saldoUSD = cuentasLiquidas.filter((c) => c.moneda === "USD").reduce((s, c) => s + c.saldo, 0);
+  const saldoEUR = cuentasLiquidas.filter((c) => c.moneda === "EUR").reduce((s, c) => s + c.saldo, 0);
 
   // Suma todo lo convertible; las monedas sin tasa disponible se muestran aparte
   const saldoTotal =
