@@ -11,14 +11,16 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang="es">
       <body>
         <header className="topbar">
-          <Link href="/">💰 Mis Deudas</Link>
+          <Link href="/" className="nav-logo">
+            <span className="dot">·</span> Mis Deudas
+          </Link>
           {user && (
             <div className="user">
               <Link href="/asesor">Asesor IA</Link>
               <Link href="/dashboard">Mis Deudas</Link>
               <Link href="/finanzas">Mis Finanzas</Link>
               <Link href="/calendario">Calendario</Link>
-              <span>{user.nombre}</span>
+              <div className="avatar">{user.nombre.charAt(0).toUpperCase()}</div>
               <LogoutButton />
             </div>
           )}
