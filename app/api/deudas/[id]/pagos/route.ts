@@ -49,6 +49,16 @@ export async function POST(
     args: [deuda.id, montoNum, fecha_pago, comprobante_url || null, cuenta?.id ?? null],
   });
 
+  if (deuda.categoria === "deuda") {
+    const totalPagadoNuevo = deuda.total_pagado + montoNum;
+    if (totalPagadoNuevo >= deuda.monto_inicial) {
+      await db.execute({
+        sql: "UPDATE deudas SET estado = 'archivada' WHERE id = ?",
+        args: [deuda.id],
+      });
+    }
+  }
+
   if (cuenta) {
     await registrarMovimiento({
       userId: user.id,
