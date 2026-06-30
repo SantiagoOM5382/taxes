@@ -438,6 +438,8 @@ a.deuda-link { color: #2563eb; text-decoration: none; font-weight: 600; }
 }
 .dot-mini.pendiente { background: #ef4444; }
 
+.dot-mini.pagado { background: #22c55e; }
+
 /* ── Rediseño dashboard ─────────────────────────────────────── */
 
 /* KPI grid */
@@ -595,4 +597,3 @@ header.topbar .user a:hover { color: #fff; }
   .kpi-grid { grid-template-columns: 1fr; }
   .items-grid { grid-template-columns: 1fr; }
 }
-.dot-mini.pagado { background: #22c55e; }
