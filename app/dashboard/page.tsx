@@ -121,81 +121,83 @@ export default async function Home() {
         )}
       </div>
 
-      <div className="card">
-        <div className="section-header">
-          <h2>Deudas</h2>
-          {deudas.length > 0 && <span className="section-count">({deudas.length})</span>}
+      <div className="cards-row">
+        <div className="card">
+          <div className="section-header">
+            <h2>Deudas</h2>
+            {deudas.length > 0 && <span className="section-count">({deudas.length})</span>}
+          </div>
+          {deudas.length === 0 ? (
+            <div className="empty-state">No tenés deudas registradas ✓</div>
+          ) : (
+            <div className="items-grid">
+              {deudas.map((d) => {
+                const pct = d.monto_inicial > 0
+                  ? Math.round(((d.monto_inicial - d.monto_actual) / d.monto_inicial) * 100)
+                  : 100;
+                return (
+                  <Link key={d.id} className="item-card" href={`/deudas/${d.id}`}>
+                    <div className="item-card-header">
+                      <div>
+                        <div className="item-name">{d.descripcion}</div>
+                        {d.acreedor && <div className="item-sub">{d.acreedor}</div>}
+                      </div>
+                      <div className="item-amount" style={{ color: "#b91c1c" }}>
+                        {cop.format(d.monto_actual)}
+                      </div>
+                    </div>
+                    {d.frecuencia_pago && (
+                      <span className="freq-badge freq-deuda">{d.frecuencia_pago}</span>
+                    )}
+                    <div className="progress-bar" style={{ marginTop: 10 }}>
+                      <div
+                        className="progress-bar-fill"
+                        style={{ width: `${pct}%`, background: "#22c55e" }}
+                      />
+                    </div>
+                    <div className="item-progress-label">{pct}% pagado</div>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
         </div>
-        {deudas.length === 0 ? (
-          <div className="empty-state">No tenés deudas registradas ✓</div>
-        ) : (
-          <div className="items-grid">
-            {deudas.map((d) => {
-              const pct = d.monto_inicial > 0
-                ? Math.round(((d.monto_inicial - d.monto_actual) / d.monto_inicial) * 100)
-                : 100;
-              return (
+
+        <div className="card">
+          <div className="section-header">
+            <h2>Responsabilidades</h2>
+            {responsabilidades.length > 0 && (
+              <span className="section-count">({responsabilidades.length})</span>
+            )}
+          </div>
+          {responsabilidades.length === 0 ? (
+            <div className="empty-state">Sin responsabilidades registradas</div>
+          ) : (
+            <div className="items-grid">
+              {responsabilidades.map((d) => (
                 <Link key={d.id} className="item-card" href={`/deudas/${d.id}`}>
                   <div className="item-card-header">
                     <div>
                       <div className="item-name">{d.descripcion}</div>
                       {d.acreedor && <div className="item-sub">{d.acreedor}</div>}
                     </div>
-                    <div className="item-amount" style={{ color: "#b91c1c" }}>
-                      {cop.format(d.monto_actual)}
+                    <div>
+                      <div className="item-amount" style={{ color: "#0f172a" }}>
+                        {d.valor_estimado != null ? cop.format(d.valor_estimado) : "variable"}
+                      </div>
+                      <div className="item-progress-label" style={{ textAlign: "right" }}>
+                        pagado: {cop.format(d.total_pagado)}
+                      </div>
                     </div>
                   </div>
                   {d.frecuencia_pago && (
-                    <span className="freq-badge freq-deuda">{d.frecuencia_pago}</span>
+                    <span className="freq-badge freq-resp">{d.frecuencia_pago}</span>
                   )}
-                  <div className="progress-bar" style={{ marginTop: 10 }}>
-                    <div
-                      className="progress-bar-fill"
-                      style={{ width: `${pct}%`, background: "#22c55e" }}
-                    />
-                  </div>
-                  <div className="item-progress-label">{pct}% pagado</div>
                 </Link>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      <div className="card">
-        <div className="section-header">
-          <h2>Responsabilidades</h2>
-          {responsabilidades.length > 0 && (
-            <span className="section-count">({responsabilidades.length})</span>
+              ))}
+            </div>
           )}
         </div>
-        {responsabilidades.length === 0 ? (
-          <div className="empty-state">Sin responsabilidades registradas</div>
-        ) : (
-          <div className="items-grid">
-            {responsabilidades.map((d) => (
-              <Link key={d.id} className="item-card" href={`/deudas/${d.id}`}>
-                <div className="item-card-header">
-                  <div>
-                    <div className="item-name">{d.descripcion}</div>
-                    {d.acreedor && <div className="item-sub">{d.acreedor}</div>}
-                  </div>
-                  <div>
-                    <div className="item-amount" style={{ color: "#0f172a" }}>
-                      {d.valor_estimado != null ? cop.format(d.valor_estimado) : "variable"}
-                    </div>
-                    <div className="item-progress-label" style={{ textAlign: "right" }}>
-                      pagado: {cop.format(d.total_pagado)}
-                    </div>
-                  </div>
-                </div>
-                {d.frecuencia_pago && (
-                  <span className="freq-badge freq-resp">{d.frecuencia_pago}</span>
-                )}
-              </Link>
-            ))}
-          </div>
-        )}
       </div>
 
       <div className="card">

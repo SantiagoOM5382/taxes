@@ -597,3 +597,18 @@ header.topbar .user a:hover { color: #fff; }
   .kpi-grid { grid-template-columns: 1fr; }
   .items-grid { grid-template-columns: 1fr; }
 }
+
+.cards-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.cards-row .items-grid {
+  grid-template-columns: 1fr;
+}
+
+@media (max-width: 640px) {
+  .cards-row {
+    grid-template-columns: 1fr;
+  }
+}
