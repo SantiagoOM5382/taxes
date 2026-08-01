@@ -19,6 +19,7 @@ export interface Deuda {
   mes_pago: number | null;
   pagada_mes_actual?: boolean;        // responsabilidades only
   ultimo_reset_fecha?: string | null; // responsabilidades only
+  dueno?: string;                      // nombre del dueño (en listDeudas)
 }
 
 function aplicarResetPeriodo(deuda: Deuda): Deuda {
@@ -148,6 +149,7 @@ export async function listDeudas(userId: string) {
       fecha_vencimiento: row.fecha_vencimiento ? String(row.fecha_vencimiento) : null,
       dia_pago: row.dia_pago != null ? Number(row.dia_pago) : null,
       mes_pago: row.mes_pago != null ? Number(row.mes_pago) : null,
+      dueno: row.dueno ? String(row.dueno) : undefined,
     } satisfies Deuda;
     return aplicarResetPeriodo(deuda);
   });
