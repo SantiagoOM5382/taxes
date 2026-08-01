@@ -17,6 +17,8 @@ export interface Deuda {
   fecha_vencimiento: string | null;
   dia_pago: number | null;
   mes_pago: number | null;
+  pagada_mes_actual?: boolean;        // responsabilidades only
+  ultimo_reset_fecha?: string | null; // responsabilidades only
 }
 
 // Devuelve la deuda solo si el usuario es dueño o tiene acceso compartido.
@@ -45,6 +47,8 @@ export async function getDeudaConAcceso(deudaId: string, userId: string) {
     es_propia: Boolean(Number(row.es_propia)),
     categoria: row.categoria === "responsabilidad" ? "responsabilidad" : "deuda",
     estado: (row.estado === "archivada" ? "archivada" : "activa") as "activa" | "archivada",
+    pagada_mes_actual: Boolean(Number(row.pagada_mes_actual ?? 0)),
+    ultimo_reset_fecha: row.ultimo_reset_fecha ? String(row.ultimo_reset_fecha) : null,
     frecuencia_pago: row.frecuencia_pago ? String(row.frecuencia_pago) : null,
     valor_estimado: row.valor_estimado != null ? Number(row.valor_estimado) : null,
     tasa_interes: row.tasa_interes != null ? Number(row.tasa_interes) : null,
@@ -79,6 +83,8 @@ export async function listDeudas(userId: string) {
       | "deuda"
       | "responsabilidad",
     estado: (row.estado === "archivada" ? "archivada" : "activa") as "activa" | "archivada",
+    pagada_mes_actual: Boolean(Number(row.pagada_mes_actual ?? 0)),
+    ultimo_reset_fecha: row.ultimo_reset_fecha ? String(row.ultimo_reset_fecha) : null,
     frecuencia_pago: row.frecuencia_pago ? String(row.frecuencia_pago) : null,
     valor_estimado: row.valor_estimado != null ? Number(row.valor_estimado) : null,
     tasa_interes: row.tasa_interes != null ? Number(row.tasa_interes) : null,
