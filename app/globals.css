@@ -73,7 +73,6 @@ body {
   grid-row: 2;
 }
 
-/* Mobile: sidebar devient un bottom nav */
 @media (max-width: 768px) {
   .app-layout {
     grid-template-columns: 1fr;
@@ -159,27 +158,6 @@ th {
   font-size: var(--font-size-xs);
   text-transform: uppercase;
   font-weight: 600;
-}
-
-/* Modales */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(15, 18, 28, 0.55);
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  padding: 40px 16px;
-  z-index: 50;
-  overflow-y: auto;
-}
-
-.modal {
-  background: var(--color-card);
-  border-radius: 12px;
-  padding: var(--spacing-lg);
-  box-shadow: var(--shadow-lg);
-  max-width: 500px;
 }
 
 /* Botones */
@@ -485,6 +463,30 @@ form {
 .freq-resp {
   background: rgba(249, 115, 22, 0.1);
   color: #b45309;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   MODALES
+   ───────────────────────────────────────────────────────────── */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 18, 28, 0.55);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 40px 16px;
+  z-index: 50;
+  overflow-y: auto;
+}
+
+.modal {
+  background: var(--color-card);
+  border-radius: 12px;
+  padding: var(--spacing-lg);
+  box-shadow: var(--shadow-lg);
+  max-width: 500px;
 }
 
 /* ─────────────────────────────────────────────────────────────
