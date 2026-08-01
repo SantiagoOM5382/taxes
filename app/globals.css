@@ -1,9 +1,10 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-  font-family: system-ui, -apple-system, sans-serif;
-  background: #f4f5f7;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  background: #f8fafc;
   color: #1f2430;
+  line-height: 1.6;
 }
 
 main { max-width: 860px; margin: 0 auto; padding: 24px 16px; }
@@ -22,9 +23,14 @@ header.topbar .user { font-size: 14px; display: flex; gap: 12px; align-items: ce
 .card {
   background: #fff;
   border: 1px solid #e2e4ea;
-  border-radius: 10px;
-  padding: 18px;
+  border-radius: 12px;
+  padding: 20px;
   margin-bottom: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+.card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 h1 { font-size: 24px; margin-bottom: 16px; }
@@ -41,17 +47,23 @@ input, select {
 }
 
 button {
-  padding: 9px 16px;
-  background: #2563eb;
+  padding: 10px 16px;
+  background: #0f172a;
   color: #fff;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
 }
-button:hover { background: #1d4ed8; }
-button:disabled { background: #9db4e8; cursor: not-allowed; }
+button:hover:not(:disabled) {
+  background: #1e293b;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.2);
+}
+button:disabled { background: #cbd5e1; cursor: not-allowed; }
 button.secondary { background: transparent; color: #cbd2e0; border: 1px solid #4a5165; }
 
 table { width: 100%; border-collapse: collapse; font-size: 14px; }
@@ -453,8 +465,13 @@ a.deuda-link { color: #2563eb; text-decoration: none; font-weight: 600; }
   background: #fff;
   border-radius: 12px;
   padding: 20px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   border-left: 4px solid transparent;
+  transition: all 0.2s ease;
+}
+.kpi-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
 }
 .kpi-label {
   font-size: 11px;
@@ -565,10 +582,19 @@ a.deuda-link { color: #2563eb; text-decoration: none; font-weight: 600; }
 .freq-resp  { background: #fef3c7; color: #92400e; }
 
 /* Navbar mejorada */
-header.topbar { background: #0f172a; border-bottom: 1px solid #1e293b; }
+header.topbar {
+  background: linear-gradient(135deg, #0f172a, #1e293b);
+  border-bottom: 1px solid #334155;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
 .nav-logo { font-weight: 700 !important; font-size: 16px !important; color: #fff !important; }
-.nav-logo .dot { color: #3b82f6; }
-header.topbar .user a { color: #94a3b8; transition: color 150ms; font-weight: 500; }
+.nav-logo .dot { color: #3b82f6; font-size: 20px; }
+header.topbar .user a {
+  color: #cbd5e1;
+  transition: color 150ms ease;
+  font-weight: 500;
+  font-size: 14px;
+}
 header.topbar .user a:hover { color: #fff; }
 .avatar {
   width: 32px;
@@ -590,6 +616,21 @@ header.topbar .user a:hover { color: #fff; }
   padding: 32px 16px;
   color: #94a3b8;
   font-size: 14px;
+}
+
+/* Health Status Colors */
+.kpi-card[style*="border-left-color: #10b981"],
+.progress-bar-fill[style*="background: #22c55e"],
+.progress-bar-fill[style*="background: #10b981"] {
+  --health: success;
+}
+
+.kpi-card[style*="border-left-color: #f97316"] {
+  --health: warning;
+}
+
+.kpi-card[style*="border-left-color: #ef4444"] {
+  --health: danger;
 }
 
 /* Responsive */
