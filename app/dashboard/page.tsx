@@ -7,6 +7,7 @@ import { getTasasCOP } from "@/lib/tasas";
 import NuevaDeudaBoton from "@/components/NuevaDeudaBoton";
 import DeudasArchivadas from "@/components/DeudasArchivadas";
 import ResponsabilidadesGrid from "@/components/ResponsabilidadesGrid";
+import ResponsabilidadesArchivadas from "@/components/ResponsabilidadesArchivadas";
 
 const cop = new Intl.NumberFormat("es-CO", {
   style: "currency",
@@ -186,6 +187,7 @@ export default async function Home() {
           ) : (
             <ResponsabilidadesGrid responsabilidades={responsabilidades} />
           )}
+          <ResponsabilidadesArchivadas responsabilidades={responsabilidadesArchivadas} />
         </div>
       </div>
 
