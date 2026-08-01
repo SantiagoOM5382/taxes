@@ -22,6 +22,101 @@ export interface Deuda {
   dueno?: string;                      // nombre del dueño (en listDeudas)
 }
 
+function calcularProximoDiaPago(
+  frecuencia: string | null,
+  dia_pago: number | null,
+  mes_pago: number | null,
+  now: Date
+): Date {
+  const prox = new Date(now);
+
+  if (!dia_pago) {
+    // Sin día específico, default a hoy
+    return prox;
+  }
+
+  const mesActual = now.getMonth();
+  const diaActual = now.getDate();
+  const anioActual = now.getFullYear();
+  const ultDiaDelMes = new Date(anioActual, mesActual + 1, 0).getDate();
+  const diaPagoEfectivo = Math.min(dia_pago, ultDiaDelMes);
+
+  switch (frecuencia?.toLowerCase()) {
+    case "diaria":
+      prox.setDate(diaActual + 1);
+      return prox;
+
+    case "semanal": {
+      const diasHastaDiaPago = (diaPagoEfectivo - diaActual + 7) % 7 || 7;
+      prox.setDate(diaActual + diasHastaDiaPago);
+      return prox;
+    }
+
+    case "quincenal": {
+      // Próximo 15 o 30
+      if (diaActual < 15) {
+        prox.setDate(15);
+      } else if (diaActual < 30 && ultDiaDelMes >= 30) {
+        prox.setDate(30);
+      } else {
+        // Próximo mes, día 15
+        prox.setMonth(mesActual + 1);
+        prox.setDate(15);
+      }
+      return prox;
+    }
+
+    case "mensual": {
+      if (diaActual < diaPagoEfectivo) {
+        prox.setDate(diaPagoEfectivo);
+      } else {
+        prox.setMonth(mesActual + 1);
+        const ultDelProxMes = new Date(anioActual, mesActual + 2, 0).getDate();
+        prox.setDate(Math.min(dia_pago, ultDelProxMes));
+      }
+      return prox;
+    }
+
+    case "semestral": {
+      if (mes_pago == null) return prox;
+      const mesPagoIndex = mes_pago - 1; // 0-indexed
+      const mesProx = mesPagoIndex < mesActual ? mesPagoIndex + 6 : mesPagoIndex;
+      const anioProx = mesPagoIndex < mesActual ? anioActual + 1 : anioActual;
+      prox.setFullYear(anioProx);
+      prox.setMonth(mesProx);
+      const ultDelMesProx = new Date(anioProx, mesProx + 1, 0).getDate();
+      prox.setDate(Math.min(dia_pago, ultDelMesProx));
+      return prox;
+    }
+
+    case "anual": {
+      if (mes_pago == null) return prox;
+      const mesPagoIndex = mes_pago - 1; // 0-indexed
+      if (
+        mesActual > mesPagoIndex ||
+        (mesActual === mesPagoIndex && diaActual > diaPagoEfectivo)
+      ) {
+        prox.setFullYear(anioActual + 1);
+      }
+      prox.setMonth(mesPagoIndex);
+      const ultDelMesPago = new Date(prox.getFullYear(), mesPagoIndex + 1, 0).getDate();
+      prox.setDate(Math.min(dia_pago, ultDelMesPago));
+      return prox;
+    }
+
+    default:
+      // Asumir mensual
+      if (diaActual < diaPagoEfectivo) {
+        prox.setDate(diaPagoEfectivo);
+      } else {
+        prox.setMonth(mesActual + 1);
+        const ultDelProxMes = new Date(anioActual, mesActual + 2, 0).getDate();
+        prox.setDate(Math.min(dia_pago || 1, ultDelProxMes));
+      }
+      return prox;
+  }
+}
+
 function aplicarResetPeriodo(deuda: Deuda): Deuda {
   if (deuda.categoria !== "responsabilidad") {
     return deuda; // solo aplica a responsabilidades
@@ -37,36 +132,16 @@ function aplicarResetPeriodo(deuda: Deuda): Deuda {
     };
   }
 
-  const ultimoReset = new Date(deuda.ultimo_reset_fecha);
-  let proximoReset = new Date(ultimoReset);
+  // Calcular próximo día de pago basado en días reales, no duración
+  const proximoDiaPago = calcularProximoDiaPago(
+    deuda.frecuencia_pago,
+    deuda.dia_pago,
+    deuda.mes_pago,
+    now
+  );
 
-  // Calcular próximo reset basado en frecuencia_pago
-  switch (deuda.frecuencia_pago?.toLowerCase()) {
-    case "diaria":
-      proximoReset.setDate(proximoReset.getDate() + 1);
-      break;
-    case "semanal":
-      proximoReset.setDate(proximoReset.getDate() + 7);
-      break;
-    case "quincenal":
-      proximoReset.setDate(proximoReset.getDate() + 15);
-      break;
-    case "mensual":
-      proximoReset.setMonth(proximoReset.getMonth() + 1);
-      break;
-    case "semestral":
-      proximoReset.setMonth(proximoReset.getMonth() + 6);
-      break;
-    case "anual":
-      proximoReset.setFullYear(proximoReset.getFullYear() + 1);
-      break;
-    default:
-      // Si no hay frecuencia especificada, asumir mensual
-      proximoReset.setMonth(proximoReset.getMonth() + 1);
-  }
-
-  // Si ya pasó la fecha de próximo reset, resetear y desarchizar
-  if (now >= proximoReset) {
+  // Si hoy >= próximo día de pago, resetear y desarchizar
+  if (now >= proximoDiaPago) {
     return {
       ...deuda,
       pagada_mes_actual: false,
