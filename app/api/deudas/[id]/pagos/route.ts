@@ -59,6 +59,17 @@ export async function POST(
     }
   }
 
+  if (deuda.categoria === "responsabilidad") {
+    const totalPagadoNuevo = deuda.total_pagado + montoNum;
+    const montoEsperado = deuda.valor_estimado ?? 0;
+    if (montoEsperado > 0 && totalPagadoNuevo >= montoEsperado) {
+      await db.execute({
+        sql: "UPDATE deudas SET pagada_mes_actual = true WHERE id = ?",
+        args: [deuda.id],
+      });
+    }
+  }
+
   if (cuenta) {
     await registrarMovimiento({
       userId: user.id,
