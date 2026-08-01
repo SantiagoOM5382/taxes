@@ -6,6 +6,7 @@ import { listCuentas, ensureCuentaEfectivo } from "@/lib/finanzas";
 import { getTasasCOP } from "@/lib/tasas";
 import NuevaDeudaBoton from "@/components/NuevaDeudaBoton";
 import DeudasArchivadas from "@/components/DeudasArchivadas";
+import ResponsabilidadesGrid from "@/components/ResponsabilidadesGrid";
 
 const cop = new Intl.NumberFormat("es-CO", {
   style: "currency",
@@ -180,29 +181,7 @@ export default async function Home() {
           {responsabilidades.length === 0 ? (
             <div className="empty-state">Sin responsabilidades registradas</div>
           ) : (
-            <div className="items-grid">
-              {responsabilidades.map((d) => (
-                <Link key={d.id} className="item-card" href={`/deudas/${d.id}`}>
-                  <div className="item-card-header">
-                    <div>
-                      <div className="item-name">{d.descripcion}</div>
-                      {d.acreedor && <div className="item-sub">{d.acreedor}</div>}
-                    </div>
-                    <div>
-                      <div className="item-amount" style={{ color: "#0f172a" }}>
-                        {d.valor_estimado != null ? cop.format(d.valor_estimado) : "variable"}
-                      </div>
-                      <div className="item-progress-label" style={{ textAlign: "right" }}>
-                        pagado: {cop.format(d.total_pagado)}
-                      </div>
-                    </div>
-                  </div>
-                  {d.frecuencia_pago && (
-                    <span className="freq-badge freq-resp">{d.frecuencia_pago}</span>
-                  )}
-                </Link>
-              ))}
-            </div>
+            <ResponsabilidadesGrid responsabilidades={responsabilidades} />
           )}
         </div>
       </div>
