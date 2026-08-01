@@ -176,6 +176,11 @@ th {
 
 .modal {
   background: var(--color-card);
+  border-radius: 12px;
+  padding: var(--spacing-lg);
+  box-shadow: var(--shadow-lg);
+  max-width: 500px;
+}
 
 /* Botones */
 button {
