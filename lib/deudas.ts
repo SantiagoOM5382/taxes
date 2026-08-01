@@ -167,7 +167,7 @@ export async function listResponsabilidades(userId: string): Promise<Responsabil
   const result = await db.execute({
     sql: `SELECT id, descripcion, frecuencia_pago, valor_estimado, dia_pago, mes_pago, created_at
           FROM deudas
-          WHERE user_id = ? AND dia_pago IS NOT NULL
+          WHERE user_id = ? AND dia_pago IS NOT NULL AND estado != 'archivada'
           ORDER BY dia_pago`,
     args: [userId],
   });
