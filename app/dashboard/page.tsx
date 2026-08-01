@@ -39,7 +39,10 @@ export default async function Home() {
     (d) => d.categoria === "deuda" && d.es_propia && d.estado === "archivada"
   );
   const responsabilidades = todas.filter(
-    (d) => d.categoria === "responsabilidad" && d.es_propia
+    (d) => d.categoria === "responsabilidad" && d.es_propia && d.estado !== "archivada"
+  );
+  const responsabilidadesArchivadas = todas.filter(
+    (d) => d.categoria === "responsabilidad" && d.es_propia && d.estado === "archivada"
   );
   const compartidas = todas.filter((d) => !d.es_propia);
 

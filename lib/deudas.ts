@@ -65,11 +65,12 @@ function aplicarResetPeriodo(deuda: Deuda): Deuda {
       proximoReset.setMonth(proximoReset.getMonth() + 1);
   }
 
-  // Si ya pasó la fecha de próximo reset, resetear
+  // Si ya pasó la fecha de próximo reset, resetear y desarchizar
   if (now >= proximoReset) {
     return {
       ...deuda,
       pagada_mes_actual: false,
+      estado: "activa",
       ultimo_reset_fecha: now.toISOString(),
     };
   }

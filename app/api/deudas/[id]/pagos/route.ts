@@ -64,7 +64,7 @@ export async function POST(
     const montoEsperado = deuda.valor_estimado ?? 0;
     if (montoEsperado > 0 && totalPagadoNuevo >= montoEsperado) {
       await db.execute({
-        sql: "UPDATE deudas SET pagada_mes_actual = true WHERE id = ?",
+        sql: "UPDATE deudas SET pagada_mes_actual = true, estado = 'archivada' WHERE id = ?",
         args: [deuda.id],
       });
     }

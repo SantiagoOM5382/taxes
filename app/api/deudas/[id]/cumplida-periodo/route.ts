@@ -34,9 +34,10 @@ export async function PATCH(
     );
   }
 
+  const nuevoEstado = cumplida ? "archivada" : "activa";
   await db.execute({
-    sql: "UPDATE deudas SET pagada_mes_actual = ? WHERE id = ?",
-    args: [cumplida ? 1 : 0, deuda.id],
+    sql: "UPDATE deudas SET pagada_mes_actual = ?, estado = ? WHERE id = ?",
+    args: [cumplida ? 1 : 0, nuevoEstado, deuda.id],
   });
 
   return NextResponse.json({ updated: true }, { status: 200 });
