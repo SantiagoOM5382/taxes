@@ -1,31 +1,29 @@
 import "./globals.css";
-import Link from "next/link";
 import { getSession } from "@/lib/session";
-import LogoutButton from "@/components/LogoutButton";
+import Navigation from "@/components/Navigation";
+import Footer from "@/components/Footer";
 
 export const metadata = { title: "Mis Deudas" };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const user = await getSession();
+
   return (
     <html lang="es">
       <body>
-        <header className="topbar">
-          <Link href="/" className="nav-logo">
-            <span className="dot">·</span> Mis Deudas
-          </Link>
-          {user && (
-            <div className="user">
-              <Link href="/asesor">Asesor IA</Link>
-              <Link href="/dashboard">Mis Deudas</Link>
-              <Link href="/finanzas">Mis Finanzas</Link>
-              <Link href="/calendario">Calendario</Link>
-              <div className="avatar">{user.nombre.charAt(0).toUpperCase()}</div>
-              <LogoutButton />
-            </div>
-          )}
-        </header>
-        {children}
+        {user ? (
+          <div className="app-layout">
+            <Navigation user={user} />
+            <main className="app-main">
+              {children}
+            </main>
+            <Footer user={user} />
+          </div>
+        ) : (
+          <>
+            {children}
+          </>
+        )}
       </body>
     </html>
   );

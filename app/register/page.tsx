@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { UserPlus } from "lucide-react";
+import "../login/auth.css";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -34,23 +36,72 @@ export default function RegisterPage() {
   }
 
   return (
-    <main style={{ maxWidth: 400 }}>
-      <div className="card">
-        <h1>Crear cuenta</h1>
-        <form onSubmit={onSubmit}>
-          <label>Nombre</label>
-          <input name="nombre" required />
-          <label>Email</label>
-          <input name="email" type="email" required />
-          <label>Contraseña</label>
-          <input name="password" type="password" minLength={6} required />
-          {error && <p className="error">{error}</p>}
-          <button disabled={loading}>{loading ? "Creando..." : "Registrarme"}</button>
+    <div className="auth-container">
+      <div className="auth-card">
+        <div className="auth-header">
+          <div className="auth-icon">
+            <UserPlus size={32} />
+          </div>
+          <h1>Crear cuenta</h1>
+          <p>Comienza a gestionar tu salud financiera</p>
+        </div>
+
+        <form onSubmit={onSubmit} className="auth-form">
+          <div className="form-group">
+            <label htmlFor="nombre">Nombre completo</label>
+            <input
+              id="nombre"
+              name="nombre"
+              type="text"
+              placeholder="Tu nombre"
+              required
+              autoComplete="name"
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="email">Email</label>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              placeholder="tu@email.com"
+              required
+              autoComplete="email"
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="password">Contraseña</label>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              placeholder="Mínimo 6 caracteres"
+              minLength={6}
+              required
+              autoComplete="new-password"
+            />
+          </div>
+
+          {error && <div className="form-error">{error}</div>}
+
+          <button type="submit" disabled={loading} className="auth-button primary">
+            {loading ? "Creando cuenta..." : "Registrarse"}
+          </button>
         </form>
-        <p className="muted" style={{ marginTop: 12 }}>
-          ¿Ya tienes cuenta? <Link href="/login">Inicia sesión</Link>
-        </p>
+
+        <div className="auth-footer">
+          <p>
+            ¿Ya tienes cuenta?{" "}
+            <Link href="/login" className="auth-link">
+              Inicia sesión
+            </Link>
+          </p>
+        </div>
       </div>
-    </main>
+
+      <div className="auth-background"></div>
+    </div>
   );
 }

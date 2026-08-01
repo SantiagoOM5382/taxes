@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { LogIn } from "lucide-react";
+import "./auth.css";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -30,21 +32,59 @@ export default function LoginPage() {
   }
 
   return (
-    <main style={{ maxWidth: 400 }}>
-      <div className="card">
-        <h1>Iniciar sesión</h1>
-        <form onSubmit={onSubmit}>
-          <label>Email</label>
-          <input name="email" type="email" required />
-          <label>Contraseña</label>
-          <input name="password" type="password" required />
-          {error && <p className="error">{error}</p>}
-          <button disabled={loading}>{loading ? "Entrando..." : "Entrar"}</button>
+    <div className="auth-container">
+      <div className="auth-card">
+        <div className="auth-header">
+          <div className="auth-icon">
+            <LogIn size={32} />
+          </div>
+          <h1>Bienvenido de vuelta</h1>
+          <p>Accede a tu panel de control financiero</p>
+        </div>
+
+        <form onSubmit={onSubmit} className="auth-form">
+          <div className="form-group">
+            <label htmlFor="email">Email</label>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              placeholder="tu@email.com"
+              required
+              autoComplete="email"
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="password">Contraseña</label>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              placeholder="••••••••"
+              required
+              autoComplete="current-password"
+            />
+          </div>
+
+          {error && <div className="form-error">{error}</div>}
+
+          <button type="submit" disabled={loading} className="auth-button primary">
+            {loading ? "Entrando..." : "Iniciar sesión"}
+          </button>
         </form>
-        <p className="muted" style={{ marginTop: 12 }}>
-          ¿No tienes cuenta? <Link href="/register">Regístrate</Link>
-        </p>
+
+        <div className="auth-footer">
+          <p>
+            ¿No tienes cuenta?{" "}
+            <Link href="/register" className="auth-link">
+              Crear cuenta
+            </Link>
+          </p>
+        </div>
       </div>
-    </main>
+
+      <div className="auth-background"></div>
+    </div>
   );
 }
