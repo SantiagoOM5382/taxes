@@ -221,6 +221,28 @@ button:disabled {
   transform: none;
 }
 
+/* Links que se ven como botones */
+.boton {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-decoration: none;
+  color: white;
+  font-family: var(--font-family);
+}
+
+.boton:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
 /* Inputs */
 input, select, textarea {
   font-family: var(--font-family);
