@@ -21,6 +21,61 @@ export interface Deuda {
   ultimo_reset_fecha?: string | null; // responsabilidades only
 }
 
+function aplicarResetPeriodo(deuda: Deuda): Deuda {
+  if (deuda.categoria !== "responsabilidad") {
+    return deuda; // solo aplica a responsabilidades
+  }
+
+  const now = new Date();
+
+  // Si nunca se ha reseteado, setear fecha pero no resetear
+  if (!deuda.ultimo_reset_fecha) {
+    return {
+      ...deuda,
+      ultimo_reset_fecha: now.toISOString(),
+    };
+  }
+
+  const ultimoReset = new Date(deuda.ultimo_reset_fecha);
+  let proximoReset = new Date(ultimoReset);
+
+  // Calcular próximo reset basado en frecuencia_pago
+  switch (deuda.frecuencia_pago?.toLowerCase()) {
+    case "diaria":
+      proximoReset.setDate(proximoReset.getDate() + 1);
+      break;
+    case "semanal":
+      proximoReset.setDate(proximoReset.getDate() + 7);
+      break;
+    case "quincenal":
+      proximoReset.setDate(proximoReset.getDate() + 15);
+      break;
+    case "mensual":
+      proximoReset.setMonth(proximoReset.getMonth() + 1);
+      break;
+    case "semestral":
+      proximoReset.setMonth(proximoReset.getMonth() + 6);
+      break;
+    case "anual":
+      proximoReset.setFullYear(proximoReset.getFullYear() + 1);
+      break;
+    default:
+      // Si no hay frecuencia especificada, asumir mensual
+      proximoReset.setMonth(proximoReset.getMonth() + 1);
+  }
+
+  // Si ya pasó la fecha de próximo reset, resetear
+  if (now >= proximoReset) {
+    return {
+      ...deuda,
+      pagada_mes_actual: false,
+      ultimo_reset_fecha: now.toISOString(),
+    };
+  }
+
+  return deuda;
+}
+
 // Devuelve la deuda solo si el usuario es dueño o tiene acceso compartido.
 export async function getDeudaConAcceso(deudaId: string, userId: string) {
   const result = await db.execute({
@@ -36,7 +91,7 @@ export async function getDeudaConAcceso(deudaId: string, userId: string) {
   });
   const row = result.rows[0];
   if (!row) return null;
-  return {
+  const deudaMapeada = {
     id: Number(row.id),
     user_id: Number(row.user_id),
     descripcion: String(row.descripcion),
@@ -56,6 +111,7 @@ export async function getDeudaConAcceso(deudaId: string, userId: string) {
     dia_pago: row.dia_pago != null ? Number(row.dia_pago) : null,
     mes_pago: row.mes_pago != null ? Number(row.mes_pago) : null,
   } satisfies Deuda;
+  return aplicarResetPeriodo(deudaMapeada);
 }
 
 export async function listDeudas(userId: string) {
@@ -70,28 +126,31 @@ export async function listDeudas(userId: string) {
           ORDER BY d.created_at DESC`,
     args: [userId, userId, userId],
   });
-  return result.rows.map((row) => ({
-    id: Number(row.id),
-    descripcion: String(row.descripcion),
-    acreedor: row.acreedor ? String(row.acreedor) : null,
-    dueno: String(row.dueno),
-    monto_inicial: Number(row.monto_inicial),
-    total_pagado: Number(row.total_pagado),
-    monto_actual: Number(row.monto_inicial) - Number(row.total_pagado),
-    es_propia: Boolean(Number(row.es_propia)),
-    categoria: (row.categoria === "responsabilidad" ? "responsabilidad" : "deuda") as
-      | "deuda"
-      | "responsabilidad",
-    estado: (row.estado === "archivada" ? "archivada" : "activa") as "activa" | "archivada",
-    pagada_mes_actual: Boolean(Number(row.pagada_mes_actual ?? 0)),
-    ultimo_reset_fecha: row.ultimo_reset_fecha ? String(row.ultimo_reset_fecha) : null,
-    frecuencia_pago: row.frecuencia_pago ? String(row.frecuencia_pago) : null,
-    valor_estimado: row.valor_estimado != null ? Number(row.valor_estimado) : null,
-    tasa_interes: row.tasa_interes != null ? Number(row.tasa_interes) : null,
-    fecha_vencimiento: row.fecha_vencimiento ? String(row.fecha_vencimiento) : null,
-    dia_pago: row.dia_pago != null ? Number(row.dia_pago) : null,
-    mes_pago: row.mes_pago != null ? Number(row.mes_pago) : null,
-  }));
+  return result.rows.map((row) => {
+    const deuda = {
+      id: Number(row.id),
+      user_id: Number(row.user_id),
+      descripcion: String(row.descripcion),
+      acreedor: row.acreedor ? String(row.acreedor) : null,
+      monto_inicial: Number(row.monto_inicial),
+      total_pagado: Number(row.total_pagado),
+      monto_actual: Number(row.monto_inicial) - Number(row.total_pagado),
+      es_propia: Boolean(Number(row.es_propia)),
+      categoria: (row.categoria === "responsabilidad" ? "responsabilidad" : "deuda") as
+        | "deuda"
+        | "responsabilidad",
+      estado: (row.estado === "archivada" ? "archivada" : "activa") as "activa" | "archivada",
+      pagada_mes_actual: Boolean(Number(row.pagada_mes_actual ?? 0)),
+      ultimo_reset_fecha: row.ultimo_reset_fecha ? String(row.ultimo_reset_fecha) : null,
+      frecuencia_pago: row.frecuencia_pago ? String(row.frecuencia_pago) : null,
+      valor_estimado: row.valor_estimado != null ? Number(row.valor_estimado) : null,
+      tasa_interes: row.tasa_interes != null ? Number(row.tasa_interes) : null,
+      fecha_vencimiento: row.fecha_vencimiento ? String(row.fecha_vencimiento) : null,
+      dia_pago: row.dia_pago != null ? Number(row.dia_pago) : null,
+      mes_pago: row.mes_pago != null ? Number(row.mes_pago) : null,
+    } satisfies Deuda;
+    return aplicarResetPeriodo(deuda);
+  });
 }
 
 export interface Responsabilidad {
