@@ -24,7 +24,7 @@ export async function POST(
 
   if (!storageConfigurado) {
     return NextResponse.json(
-      { error: "Storage no está configurado en el servidor" },
+      { error: "La subida de archivos no está disponible en este momento" },
       { status: 503 }
     );
   }

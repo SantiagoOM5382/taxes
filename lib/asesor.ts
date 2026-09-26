@@ -1,4 +1,5 @@
 import { db } from "./db";
+import { mesColombia } from "./periodos";
 import {
   getResumenFinanciero,
   ordenarEstrategia,
@@ -137,7 +138,7 @@ export interface EstadoUso {
 }
 
 function periodoActual(): string {
-  return new Date().toISOString().slice(0, 7); // YYYY-MM
+  return mesColombia(); // YYYY-MM en hora de Colombia
 }
 
 async function getPlan(userId: string): Promise<Plan> {

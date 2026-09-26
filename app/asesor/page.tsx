@@ -1,78 +1,73 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { getResumenFinanciero } from "@/lib/resumen";
 import { getEstadoUso } from "@/lib/asesor";
+import { cop } from "@/lib/format";
+import PageHeader from "@/components/PageHeader";
 import AsesorIA from "@/components/AsesorIA";
 
-const cop = new Intl.NumberFormat("es-CO", {
-  style: "currency",
-  currency: "COP",
-  maximumFractionDigits: 0,
-});
+export const metadata = { title: "Asesor" };
 
 export default async function AsesorPage() {
   const user = await getSession();
   if (!user) redirect("/login");
 
-  const [resumen, uso] = await Promise.all([
-    getResumenFinanciero(user.id),
-    getEstadoUso(user.id),
-  ]);
-
+  const [resumen, uso] = await Promise.all([getResumenFinanciero(user.id), getEstadoUso(user.id)]);
   const fc = resumen.flujo_caja;
+  const meses = resumen.indicadores.meses_para_liquidar_deudas;
 
   return (
-    <main>
-      <p style={{ marginBottom: 12 }}>
-        <Link href="/dashboard">← Volver al inicio</Link>
-      </p>
-      <h1>Asesor financiero</h1>
+    <>
+      <PageHeader
+        title="Asesor financiero"
+        sub="Analiza tus deudas, ingresos y gastos fijos y te sugiere qué hacer primero."
+      />
 
-      <AsesorIA usoInicial={uso} />
-
-      <div className="card">
-        <h2>Tu panorama (calculado, sin IA)</h2>
-        <div className="resumen">
+      <section className="ledger">
+        <div className="stats">
           <div>
-            <span className="muted">Patrimonio</span>
-            <strong className="monto">{cop.format(resumen.patrimonio.saldo_total_cop)}</strong>
+            <div className="stat-label">Ingreso mensual</div>
+            <div className="stat-value money">{cop.format(resumen.ingresos.mensual_total)}</div>
           </div>
           <div>
-            <span className="muted">Deuda total</span>
-            <strong className="monto">{cop.format(resumen.deudas.total_adeudado)}</strong>
+            <div className="stat-label">Gasto fijo mensual</div>
+            <div className="stat-value money">{cop.format(fc.gasto_fijo_mensual)}</div>
           </div>
           <div>
-            <span className="muted">Ingreso mensual</span>
-            <strong className="monto">{cop.format(resumen.ingresos.mensual_total)}</strong>
-          </div>
-          <div>
-            <span className="muted">Gasto fijo mensual</span>
-            <strong className="monto">{cop.format(fc.gasto_fijo_mensual)}</strong>
-          </div>
-          <div>
-            <span className="muted">Capacidad de ahorro estimada</span>
-            <strong
-              className="monto"
-              style={{ color: fc.capacidad_ahorro_estimada >= 0 ? "#166534" : "#b91c1c" }}
-            >
+            <div className="stat-label">Te sobra al mes</div>
+            <div className={`stat-value money ${fc.capacidad_ahorro_estimada >= 0 ? "money-paid" : "money-debt"}`}>
               {cop.format(fc.capacidad_ahorro_estimada)}
-            </strong>
+            </div>
           </div>
-          {resumen.indicadores.meses_para_liquidar_deudas != null && (
+          <div>
+            <div className="stat-label">Patrimonio</div>
+            <div className="stat-value money">{cop.format(resumen.patrimonio.saldo_total_cop)}</div>
+          </div>
+          <div>
+            <div className="stat-label">Deuda total</div>
+            <div className={`stat-value money ${resumen.deudas.total_adeudado > 0 ? "money-debt" : ""}`}>
+              {cop.format(resumen.deudas.total_adeudado)}
+            </div>
+          </div>
+          {meses != null && (
             <div>
-              <span className="muted">Meses para liquidar deudas</span>
-              <strong className="monto">
-                {resumen.indicadores.meses_para_liquidar_deudas}
-              </strong>
+              <div className="stat-label">Para quedar sin deudas</div>
+              <div className="stat-value num">
+                {meses} {meses === 1 ? "mes" : "meses"}
+              </div>
             </div>
           )}
         </div>
-        <p className="muted" style={{ marginTop: 12 }}>
-          Orientación general sobre tus finanzas personales. No constituye asesoría financiera
-          profesional.
+        <p className="hint" style={{ marginTop: 16 }}>
+          Estas cifras se calculan con tus datos, sin IA.
         </p>
-      </div>
-    </main>
+      </section>
+
+      <AsesorIA usoInicial={uso} />
+
+      <p className="hint" style={{ marginTop: 16 }}>
+        Orientación general sobre finanzas personales. No constituye asesoría financiera profesional.
+      </p>
+    </>
   );
 }

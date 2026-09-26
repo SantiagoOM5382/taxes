@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
   const user = await getSession();
   if (!user) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
 
-  const { nombre, tipo, moneda, saldo, es_credito, dia_pago_credito } = await req.json().catch(() => ({}));
+  const { nombre, tipo, moneda, saldo, es_credito, dia_pago_credito, limite_credito } = await req.json().catch(() => ({}));
   const saldoNum = Number(saldo ?? 0);
   if (!nombre || !TIPOS.includes(tipo) || !MONEDAS.includes(moneda) || !Number.isFinite(saldoNum)) {
     return NextResponse.json(
@@ -31,9 +31,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "dia_pago_credito debe ser un entero entre 1 y 31" }, { status: 400 });
   }
 
+  const limite =
+    esCredito && limite_credito != null && limite_credito !== "" ? Number(limite_credito) : null;
+  if (limite !== null && (!Number.isFinite(limite) || limite < 0)) {
+    return NextResponse.json({ error: "El cupo debe ser 0 o más" }, { status: 400 });
+  }
+
   const result = await db.execute({
-    sql: "INSERT INTO cuentas (user_id, nombre, tipo, moneda, saldo, es_credito, dia_pago_credito) VALUES (?, ?, ?, ?, ?, ?, ?)",
-    args: [user.id, nombre, tipo, moneda, saldoNum, esCredito, diaPago],
+    sql: "INSERT INTO cuentas (user_id, nombre, tipo, moneda, saldo, es_credito, dia_pago_credito, limite_credito) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+    args: [user.id, String(nombre).trim(), tipo, moneda, saldoNum, esCredito, diaPago, limite],
   });
   return NextResponse.json({ id: Number(result.lastInsertRowid) }, { status: 201 });
 }

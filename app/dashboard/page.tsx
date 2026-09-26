@@ -1,28 +1,66 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
-import { listDeudas } from "@/lib/deudas";
+import { listDeudas, type Deuda } from "@/lib/deudas";
 import { listCuentas, ensureCuentaEfectivo } from "@/lib/finanzas";
 import { getTasasCOP } from "@/lib/tasas";
+import { cop, fmtMoneda, fmtFrecuencia } from "@/lib/format";
+import PageHeader from "@/components/PageHeader";
 import NuevaDeudaBoton from "@/components/NuevaDeudaBoton";
-import DeudasArchivadas from "@/components/DeudasArchivadas";
-import ResponsabilidadesGrid from "@/components/ResponsabilidadesGrid";
-import ResponsabilidadesArchivadas from "@/components/ResponsabilidadesArchivadas";
+import Desplegable from "@/components/Desplegable";
+import ResponsabilidadesLista from "@/components/ResponsabilidadesLista";
+import Accion from "@/components/Accion";
 
-const cop = new Intl.NumberFormat("es-CO", {
-  style: "currency",
-  currency: "COP",
-  maximumFractionDigits: 0,
-});
-function fmtMoneda(moneda: string, valor: number) {
-  return new Intl.NumberFormat("es-CO", {
-    style: "currency",
-    currency: moneda,
-    maximumFractionDigits: 2,
-  }).format(valor);
+export const metadata = { title: "Resumen" };
+
+function pctPagado(d: Deuda) {
+  if (d.monto_inicial <= 0) return 100;
+  return Math.max(0, Math.min(100, Math.round(((d.monto_inicial - d.monto_actual) / d.monto_inicial) * 100)));
 }
 
-export default async function Home() {
+function DeudaFila({ d, archivada = false }: { d: Deuda; archivada?: boolean }) {
+  const pct = pctPagado(d);
+  return (
+    <li>
+      <Link href={`/deudas/${d.id}`} className="row">
+        <div className="row-main">
+          <div className="row-title">{d.descripcion}</div>
+          <div className="row-sub">
+            {[d.acreedor, d.frecuencia_pago ? fmtFrecuencia(d.frecuencia_pago) : null].filter(Boolean).join(", ") ||
+              "Sin acreedor"}
+          </div>
+          {!archivada && (
+            <div className="meter" aria-label={`${pct}% pagado`}>
+              <span style={{ width: `${pct}%` }} />
+            </div>
+          )}
+        </div>
+        <div className="row-end">
+          {archivada ? (
+            d.monto_actual > 0 ? (
+              <>
+                <div className="row-amount money">{cop.format(d.monto_actual)}</div>
+                <div className="row-amount-sub">Archivada con saldo</div>
+              </>
+            ) : (
+              <>
+                <div className="row-amount money">{cop.format(d.monto_inicial)}</div>
+                <div className="row-amount-sub">Saldada</div>
+              </>
+            )
+          ) : (
+            <>
+              <div className="row-amount money money-debt">{cop.format(d.monto_actual)}</div>
+              <div className="row-amount-sub">{pct}% pagado</div>
+            </>
+          )}
+        </div>
+      </Link>
+    </li>
+  );
+}
+
+export default async function Dashboard() {
   const user = await getSession();
   if (!user) redirect("/login");
 
@@ -32,213 +70,230 @@ export default async function Home() {
     listCuentas(user.id),
     getTasasCOP(),
   ]);
-  const cuentas = todasCuentas.filter((c) => c.estado !== "archivada");
-  const deudas = todas.filter(
-    (d) => d.categoria === "deuda" && d.es_propia && d.estado !== "archivada"
-  );
-  const deudasArchivadas = todas.filter(
-    (d) => d.categoria === "deuda" && d.es_propia && d.estado === "archivada"
-  );
-  const responsabilidades = todas.filter(
-    (d) => d.categoria === "responsabilidad" && d.es_propia && d.estado !== "archivada"
-  );
-  const responsabilidadesArchivadas = todas.filter(
-    (d) => d.categoria === "responsabilidad" && d.es_propia && d.estado === "archivada"
+
+  const propias = todas.filter((d) => d.es_propia);
+  const deudas = propias.filter((d) => d.categoria === "deuda" && d.estado !== "archivada");
+  const deudasArchivadas = propias.filter((d) => d.categoria === "deuda" && d.estado === "archivada");
+  const responsabilidades = propias.filter((d) => d.categoria === "responsabilidad" && d.estado !== "archivada");
+  const responsabilidadesArchivadas = propias.filter(
+    (d) => d.categoria === "responsabilidad" && d.estado === "archivada"
   );
   const compartidas = todas.filter((d) => !d.es_propia);
 
-  const cuentasLiquidas = cuentas.filter((c) => !c.es_credito);
-  const saldoCOP = cuentasLiquidas.filter((c) => c.moneda === "COP").reduce((s, c) => s + c.saldo, 0);
-  const saldoUSD = cuentasLiquidas.filter((c) => c.moneda === "USD").reduce((s, c) => s + c.saldo, 0);
-  const saldoEUR = cuentasLiquidas.filter((c) => c.moneda === "EUR").reduce((s, c) => s + c.saldo, 0);
+  const cuentas = todasCuentas.filter((c) => c.estado !== "archivada");
+  const liquidas = cuentas.filter((c) => !c.es_credito);
+  const saldoPor = (m: string) => liquidas.filter((c) => c.moneda === m).reduce((s, c) => s + c.saldo, 0);
+  const saldoCOP = saldoPor("COP");
+  const saldoUSD = saldoPor("USD");
+  const saldoEUR = saldoPor("EUR");
 
-  // Suma todo lo convertible; las monedas sin tasa disponible se muestran aparte
-  const saldoTotal =
+  // Suma todo lo convertible; las monedas sin tasa disponible se indican aparte
+  const tienes =
     saldoCOP +
     (tasas.usd != null ? saldoUSD * tasas.usd : 0) +
     (tasas.eur != null ? saldoEUR * tasas.eur : 0);
   const extranjeras = [
     saldoUSD > 0 &&
       (tasas.usd != null
-        ? `${fmtMoneda("USD", saldoUSD)} (TRM ${cop.format(tasas.usd)})`
-        : `${fmtMoneda("USD", saldoUSD)} aparte`),
+        ? `${fmtMoneda("USD", saldoUSD)} a TRM ${cop.format(tasas.usd)}`
+        : `${fmtMoneda("USD", saldoUSD)} sin convertir`),
     saldoEUR > 0 &&
       (tasas.eur != null
-        ? `${fmtMoneda("EUR", saldoEUR)} (a ${cop.format(tasas.eur)})`
-        : `${fmtMoneda("EUR", saldoEUR)} aparte`),
+        ? `${fmtMoneda("EUR", saldoEUR)} a ${cop.format(tasas.eur)}`
+        : `${fmtMoneda("EUR", saldoEUR)} sin convertir`),
   ].filter(Boolean);
-  const deudaTotal = deudas.reduce((s, d) => s + d.monto_actual, 0);
 
   const tarjetas = cuentas.filter((c) => c.es_credito && c.limite_credito != null);
   const cupoTotal = tarjetas.reduce((s, c) => s + (c.limite_credito ?? 0), 0);
   const cupoDisponible = tarjetas.reduce((s, c) => s + Math.max(0, c.saldo), 0);
-  const cupoUsado = cupoTotal - cupoDisponible;
-  const pctUsado = cupoTotal > 0 ? Math.round((cupoUsado / cupoTotal) * 100) : 0;
+  const creditoUsado = Math.max(0, cupoTotal - cupoDisponible);
+  const pctUsado = cupoTotal > 0 ? Math.round((creditoUsado / cupoTotal) * 100) : 0;
+
+  // Debes = saldo de tus deudas + lo usado de las tarjetas
+  const debesDeudas = deudas.reduce((s, d) => s + Math.max(0, d.monto_actual), 0);
+  const debes = debesDeudas + creditoUsado;
+  const neto = tienes - debes;
+  const base = Math.max(tienes, 0) + debes;
+  const pctTienes = base > 0 ? (Math.max(tienes, 0) / base) * 100 : 0;
+
+  const pendientesPeriodo = responsabilidades.filter((r) => !r.pagada_mes_actual).length;
+  const primerNombre = user.nombre.split(" ")[0];
 
   return (
-    <main>
-      <div className="panel-header" style={{ marginBottom: 20 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: "#0f172a" }}>
-          Hola, {user.nombre} 👋
-        </h1>
-        <div style={{ display: "flex", gap: 8 }}>
-          <NuevaDeudaBoton />
-          <Link className="boton" href="/asesor" style={{ background: "#7c3aed" }}>
-            🤖 Asesor IA
-          </Link>
-          <Link className="boton" href="/finanzas" style={{ background: "#0f172a", border: "1px solid #334155" }}>
-            Finanzas
-          </Link>
-        </div>
-      </div>
+    <>
+      <PageHeader
+        title={`Hola, ${primerNombre}`}
+        sub={
+          pendientesPeriodo > 0
+            ? `Tienes ${pendientesPeriodo} ${pendientesPeriodo === 1 ? "pago pendiente" : "pagos pendientes"} en este periodo.`
+            : "Estás al día con tus pagos de este periodo."
+        }
+        actions={<NuevaDeudaBoton />}
+      />
 
-      <div className="kpi-grid">
-        {/* Saldo total */}
-        <div className="kpi-card" style={{ borderLeftColor: "#22c55e" }}>
-          <div className="kpi-label">💰 Saldo total</div>
-          <div className="kpi-value">{cop.format(saldoTotal)}</div>
-          {extranjeras.length > 0 && (
-            <div className="kpi-sub">incluye {extranjeras.join(" y ")}</div>
-          )}
-        </div>
-
-        {/* Deuda total */}
-        <div className="kpi-card" style={{ borderLeftColor: deudaTotal > 0 ? "#ef4444" : "#22c55e" }}>
-          <div className="kpi-label">⚠️ Deuda total</div>
-          <div className="kpi-value" style={{ color: deudaTotal > 0 ? "#b91c1c" : "#166534" }}>
-            {cop.format(deudaTotal)}
+      <section className="ledger" aria-label="Estado de cuenta">
+        <div className="ledger-figures">
+          <div className="ledger-item">
+            <div className="ledger-label">Tienes</div>
+            <div className="ledger-figure money">{cop.format(tienes)}</div>
+            <div className="ledger-note">
+              {extranjeras.length > 0 ? `Incluye ${extranjeras.join(" y ")}` : `En ${liquidas.length} ${liquidas.length === 1 ? "cuenta" : "cuentas"}`}
+            </div>
           </div>
-          {deudaTotal === 0 && <div className="kpi-sub">¡Sin deudas! 🎉</div>}
+          <div className="ledger-item">
+            <div className="ledger-label">Debes</div>
+            <div className={`ledger-figure money ${debes > 0 ? "money-debt" : ""}`}>{cop.format(debes)}</div>
+            <div className="ledger-note">
+              {[
+                deudas.length > 0 ? `${deudas.length} ${deudas.length === 1 ? "deuda" : "deudas"}` : null,
+                creditoUsado > 0 ? `${cop.format(creditoUsado)} en tarjetas` : null,
+              ]
+                .filter(Boolean)
+                .join(" y ") || "Sin deudas activas"}
+            </div>
+          </div>
+          <div className="ledger-item">
+            <div className="ledger-label">Te queda</div>
+            <div className={`ledger-figure money ${neto < 0 ? "money-debt" : ""}`}>{cop.format(neto)}</div>
+            <div className="ledger-note">Lo que tienes menos lo que debes</div>
+          </div>
         </div>
 
-        {/* Crédito disponible — solo si hay tarjetas */}
+        {base > 0 && (
+          <>
+            <div className="balance-bar" aria-hidden>
+              {pctTienes > 0 && <span className="balance-bar-have" style={{ width: `${pctTienes}%` }} />}
+              {debes > 0 && <span className="balance-bar-owe" style={{ width: `${100 - pctTienes}%` }} />}
+            </div>
+            <div className="balance-legend">
+              <span>{Math.round(pctTienes)}% es tuyo</span>
+              {debes > 0 && <span>{Math.round(100 - pctTienes)}% es deuda</span>}
+            </div>
+          </>
+        )}
+
         {cupoTotal > 0 && (
-          <div className="kpi-card" style={{ borderLeftColor: "#3b82f6" }}>
-            <div className="kpi-label">💳 Crédito disponible</div>
-            <div className="kpi-value" style={{ color: pctUsado > 80 ? "#b91c1c" : "#0f172a" }}>
-              {cop.format(cupoDisponible)}
+          <div className="mt-md" style={{ borderTop: "1px solid var(--line-soft)", paddingTop: 16 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+              <span className="ledger-label">Crédito disponible</span>
+              <span className="money" style={{ fontWeight: 650 }}>
+                {cop.format(cupoDisponible)} <span className="muted" style={{ fontWeight: 500 }}>de {cop.format(cupoTotal)}</span>
+              </span>
             </div>
-            <div className="kpi-sub">{pctUsado}% utilizado de {cop.format(cupoTotal)}</div>
-            <div className="progress-bar">
-              <div
-                className="progress-bar-fill"
-                style={{
-                  width: `${pctUsado}%`,
-                  background: pctUsado > 80 ? "#ef4444" : pctUsado > 50 ? "#f59e0b" : "#3b82f6",
-                }}
-              />
+            <div
+              className={`meter mt-md ${pctUsado > 80 ? "is-danger" : pctUsado > 50 ? "is-warn" : ""}`}
+              style={{ marginTop: 8 }}
+              aria-label={`${pctUsado}% del cupo usado`}
+            >
+              <span style={{ width: `${pctUsado}%` }} />
             </div>
+            <div className="ledger-note">{pctUsado}% del cupo usado</div>
           </div>
         )}
-      </div>
+      </section>
 
-      <div className="cards-row">
-        <div className="card">
-          <div className="section-header">
-            <h2>Deudas</h2>
-            {deudas.length > 0 && <span className="section-count">({deudas.length})</span>}
+      <div className="columns">
+        <section className="panel">
+          <div className="panel-head">
+            <h2>
+              Deudas {deudas.length > 0 && <span className="count">{deudas.length}</span>}
+            </h2>
           </div>
           {deudas.length === 0 ? (
-            <div className="empty-state">No tenés deudas registradas ✓</div>
+            <div className="empty">No tienes deudas activas.</div>
           ) : (
-            <div className="items-grid">
-              {deudas.map((d) => {
-                const pct = d.monto_inicial > 0
-                  ? Math.round(((d.monto_inicial - d.monto_actual) / d.monto_inicial) * 100)
-                  : 100;
-                return (
-                  <Link key={d.id} className="item-card" href={`/deudas/${d.id}`}>
-                    <div className="item-card-header">
-                      <div>
-                        <div className="item-name">{d.descripcion}</div>
-                        {d.acreedor && <div className="item-sub">{d.acreedor}</div>}
-                      </div>
-                      <div className="item-amount" style={{ color: "#b91c1c" }}>
-                        {cop.format(d.monto_actual)}
-                      </div>
-                    </div>
-                    {d.frecuencia_pago && (
-                      <span className="freq-badge freq-deuda">{d.frecuencia_pago}</span>
-                    )}
-                    <div className="progress-bar" style={{ marginTop: 10 }}>
-                      <div
-                        className="progress-bar-fill"
-                        style={{ width: `${pct}%`, background: "#22c55e" }}
-                      />
-                    </div>
-                    <div className="item-progress-label">{pct}% pagado</div>
-                  </Link>
-                );
-              })}
-            </div>
+            <ul className="rows">
+              {deudas.map((d) => (
+                <DeudaFila key={d.id} d={d} />
+              ))}
+            </ul>
           )}
-          <DeudasArchivadas deudas={deudasArchivadas} />
-        </div>
+          {deudasArchivadas.length > 0 && (
+            <Desplegable label={`Saldadas y archivadas (${deudasArchivadas.length})`}>
+              <ul className="rows">
+                {deudasArchivadas.map((d) => (
+                  <DeudaFila key={d.id} d={d} archivada />
+                ))}
+              </ul>
+            </Desplegable>
+          )}
+        </section>
 
-        <div className="card">
-          <div className="section-header">
-            <h2>Responsabilidades</h2>
-            {responsabilidades.length > 0 && (
-              <span className="section-count">({responsabilidades.length})</span>
-            )}
+        <section className="panel">
+          <div className="panel-head">
+            <h2>
+              Responsabilidades {responsabilidades.length > 0 && <span className="count">{responsabilidades.length}</span>}
+            </h2>
+            <Link href="/calendario" className="btn btn-quiet btn-sm">
+              Ver calendario
+            </Link>
           </div>
           {responsabilidades.length === 0 ? (
-            <div className="empty-state">Sin responsabilidades registradas</div>
+            <div className="empty">
+              Registra arriendo, servicios o suscripciones para marcarlos cada periodo.
+            </div>
           ) : (
-            <ResponsabilidadesGrid responsabilidades={responsabilidades} />
+            <ResponsabilidadesLista responsabilidades={responsabilidades} />
           )}
-          <ResponsabilidadesArchivadas responsabilidades={responsabilidadesArchivadas} />
-        </div>
+          {responsabilidadesArchivadas.length > 0 && (
+            <Desplegable label={`Archivadas (${responsabilidadesArchivadas.length})`}>
+              <ul className="rows">
+                {responsabilidadesArchivadas.map((d) => (
+                  <li key={d.id} className="row is-muted-soft">
+                    <Link href={`/deudas/${d.id}`} className="row-main" style={{ color: "inherit", textDecoration: "none" }}>
+                      <div className="row-title">{d.descripcion}</div>
+                      <div className="row-sub">
+                        {fmtFrecuencia(d.frecuencia_pago)}
+                        {d.valor_estimado != null ? `, ${cop.format(d.valor_estimado)}` : ""}
+                      </div>
+                    </Link>
+                    <Accion url={`/api/deudas/${d.id}`} method="PATCH" body={{ estado: "activa" }}>
+                      Restaurar
+                    </Accion>
+                  </li>
+                ))}
+              </ul>
+            </Desplegable>
+          )}
+        </section>
       </div>
 
-      <div className="card">
-        <div className="section-header">
-          <h2>Deudas compartidas conmigo</h2>
-          {compartidas.length > 0 && (
-            <span className="section-count">({compartidas.length})</span>
-          )}
-        </div>
-        {compartidas.length === 0 ? (
-          <div className="empty-state">Nadie te ha compartido una deuda todavía</div>
-        ) : (
-          <div className="items-grid">
+      {compartidas.length > 0 && (
+        <section className="panel">
+          <div className="panel-head">
+            <h2>
+              Compartidas contigo <span className="count">{compartidas.length}</span>
+            </h2>
+          </div>
+          <ul className="rows">
             {compartidas.map((d) => (
-              <Link key={d.id} className="item-card" href={`/deudas/${d.id}`}>
-                <div className="item-card-header">
-                  <div>
-                    <div className="item-name">{d.descripcion}</div>
-                    <div className="item-sub">de {d.dueno}</div>
-                  </div>
-                  <div>
-                    <div className="item-amount" style={{ color: d.categoria === "deuda" ? "#b91c1c" : "#0f172a" }}>
-                      {d.categoria === "deuda"
-                        ? cop.format(d.monto_actual)
-                        : d.valor_estimado != null
-                          ? cop.format(d.valor_estimado)
-                          : "variable"}
+              <li key={d.id}>
+                <Link href={`/deudas/${d.id}`} className="row">
+                  <div className="row-main">
+                    <div className="row-title">{d.descripcion}</div>
+                    <div className="row-sub">
+                      De {d.dueno}
+                      {d.frecuencia_pago ? `, ${fmtFrecuencia(d.frecuencia_pago).toLowerCase()}` : ""}
                     </div>
-                    {d.categoria === "responsabilidad" && (
-                      <div className="item-progress-label" style={{ textAlign: "right" }}>
-                        pagado: {cop.format(d.total_pagado)}
-                      </div>
+                  </div>
+                  <div className="row-end">
+                    {d.categoria === "deuda" ? (
+                      <div className="row-amount money money-debt">{cop.format(d.monto_actual)}</div>
+                    ) : (
+                      <>
+                        <div className="row-amount money">
+                          {d.valor_estimado != null ? cop.format(d.valor_estimado) : "Variable"}
+                        </div>
+                        <div className="row-amount-sub">Responsabilidad</div>
+                      </>
                     )}
                   </div>
-                </div>
-                <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
-                  {d.frecuencia_pago && (
-                    <span className={`freq-badge ${d.categoria === "deuda" ? "freq-deuda" : "freq-resp"}`}>
-                      {d.frecuencia_pago}
-                    </span>
-                  )}
-                  {d.categoria === "responsabilidad" && (
-                    <span className="badge responsabilidad">responsabilidad</span>
-                  )}
-                </div>
-              </Link>
+                </Link>
+              </li>
             ))}
-          </div>
-        )}
-      </div>
-    </main>
+          </ul>
+        </section>
+      )}
+    </>
   );
 }

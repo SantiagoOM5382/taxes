@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Cuenta } from "@/lib/finanzas";
+import EditarCuenta from "./EditarCuenta";
+import Accion from "./Accion";
 
 export default function CuentaAcciones({ cuenta }: { cuenta: Cuenta }) {
   const router = useRouter();
@@ -14,49 +16,57 @@ export default function CuentaAcciones({ cuenta }: { cuenta: Cuenta }) {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ estado }),
-    });
+    }).catch(() => null);
     setLoading(false);
     router.refresh();
   }
 
-  const estilo = { padding: "4px 10px", fontSize: 12 } as const;
-
   if (cuenta.estado === "archivada") {
     return (
-      <button className="boton" style={estilo} disabled={loading} onClick={() => cambiarEstado("activa")}>
-        Restaurar
-      </button>
+      <div className="row-actions">
+        <button className="btn btn-ghost btn-sm" disabled={loading} onClick={() => cambiarEstado("activa")}>
+          Restaurar
+        </button>
+        <Accion
+          url={`/api/cuentas/${cuenta.id}`}
+          method="DELETE"
+          className="btn btn-quiet btn-sm"
+          confirmar={`¿Eliminar ${cuenta.nombre} definitivamente? Solo es posible si no tiene movimientos.`}
+        >
+          Eliminar
+        </Accion>
+      </div>
     );
   }
 
   return (
-    <span style={{ display: "inline-flex", gap: 6 }}>
+    <div className="row-actions">
+      <EditarCuenta cuenta={cuenta} />
       {cuenta.estado === "activa" ? (
         <button
-          className="secondary accion"
-          style={estilo}
+          className="btn btn-quiet btn-sm"
           disabled={loading}
           onClick={() => cambiarEstado("inactiva")}
+          title="No se podrá usar para pagos ni movimientos"
         >
           Desactivar
         </button>
       ) : (
-        <button className="boton" style={estilo} disabled={loading} onClick={() => cambiarEstado("activa")}>
+        <button className="btn btn-ghost btn-sm" disabled={loading} onClick={() => cambiarEstado("activa")}>
           Activar
         </button>
       )}
       <button
-        className="secondary accion"
-        style={estilo}
+        className="btn btn-quiet btn-sm"
         disabled={loading}
         onClick={() => {
-          if (confirm(`¿Archivar la cuenta ${cuenta.nombre}? Dejará de aparecer en Mis cuentas.`)) {
+          if (confirm(`¿Archivar ${cuenta.nombre}? Dejará de contar en tus totales. Puedes restaurarla después.`)) {
             cambiarEstado("archivada");
           }
         }}
       >
         Archivar
       </button>
-    </span>
+    </div>
   );
 }

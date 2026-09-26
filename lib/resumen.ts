@@ -16,6 +16,7 @@ const FACTOR_MENSUAL: Record<string, number> = {
   quincenal: 2,
   mensual: 1,
   semestral: 1 / 6,
+  anual: 1 / 12,
   unico: 0,
 };
 
@@ -57,6 +58,7 @@ export interface ResumenFinanciero {
   };
   deudas: {
     total_adeudado: number;
+    credito_usado_tarjetas: number;
     cantidad: number;
     detalle: DeudaResumen[];
   };
@@ -84,12 +86,15 @@ function diasEntre(desde: Date, hasta: Date): number {
   return Math.round((hasta.getTime() - desde.getTime()) / 86_400_000);
 }
 
-// Total pagado (movimientos tipo pago_deuda) en los últimos `dias` días.
+// Total abonado a DEUDAS (no responsabilidades) en los últimos `dias` días.
+// Sale de la tabla de pagos, así cuenta también los pagos que no salieron de una cuenta.
+// Las responsabilidades ya están en el gasto fijo; sumarlas aquí las contaría dos veces.
 async function pagadoUltimosDias(userId: string, dias: number): Promise<number> {
   const desde = new Date(Date.now() - dias * 86_400_000).toISOString().slice(0, 10);
   const res = await db.execute({
-    sql: `SELECT COALESCE(SUM(ABS(monto)), 0) AS total FROM movimientos
-          WHERE user_id = ? AND tipo = 'pago_deuda' AND fecha >= ?`,
+    sql: `SELECT COALESCE(SUM(p.monto), 0) AS total FROM pagos p
+          JOIN deudas d ON d.id = p.deuda_id
+          WHERE d.user_id = ? AND d.categoria = 'deuda' AND p.fecha_pago >= ?`,
     args: [userId, desde],
   });
   return Number(res.rows[0]?.total ?? 0);
@@ -107,8 +112,15 @@ export async function getResumenFinanciero(userId: string): Promise<ResumenFinan
     pagadoUltimosDias(userId, 90),
   ]);
 
-  // Solo cuentas no archivadas cuentan para el patrimonio.
-  const cuentas = cuentasTodas.filter((c) => c.estado !== "archivada");
+  // Patrimonio = cuentas no archivadas, sin tarjetas de crédito (su saldo es cupo prestado).
+  const cuentas = cuentasTodas.filter((c) => c.estado !== "archivada" && !c.es_credito);
+  const tarjetas = cuentasTodas.filter(
+    (c) => c.estado !== "archivada" && c.es_credito && c.limite_credito != null
+  );
+  const creditoUsado = tarjetas.reduce(
+    (s, c) => s + convertirACOP(Math.max(0, (c.limite_credito ?? 0) - Math.max(0, c.saldo)), c.moneda, tasas),
+    0
+  );
   const monedas = Array.from(new Set(cuentas.map((c) => c.moneda)));
   const porMoneda = monedas.map((moneda) => {
     const saldo = cuentas.filter((c) => c.moneda === moneda).reduce((s, c) => s + c.saldo, 0);
@@ -116,10 +128,10 @@ export async function getResumenFinanciero(userId: string): Promise<ResumenFinan
   });
   const saldoTotalCOP = porMoneda.reduce((s, m) => s + m.saldo_cop, 0);
 
-  // Solo deudas propias y de categoría 'deuda' (las que se liquidan).
-  const deudas = deudasTodas.filter((d) => d.categoria === "deuda" && d.es_propia);
+  // Solo deudas propias con saldo pendiente, y responsabilidades propias no archivadas.
+  const deudas = deudasTodas.filter((d) => d.categoria === "deuda" && d.es_propia && d.monto_actual > 0);
   const responsabilidades = deudasTodas.filter(
-    (d) => d.categoria === "responsabilidad" && d.es_propia
+    (d) => d.categoria === "responsabilidad" && d.es_propia && d.estado !== "archivada"
   );
 
   const hoy = new Date();
@@ -171,6 +183,7 @@ export async function getResumenFinanciero(userId: string): Promise<ResumenFinan
     },
     deudas: {
       total_adeudado: Math.round(totalAdeudado),
+      credito_usado_tarjetas: Math.round(creditoUsado),
       cantidad: deudas.length,
       detalle: detalleDeudas,
     },

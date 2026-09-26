@@ -1,21 +1,29 @@
 "use client";
 
-import Link from "next/link";
+import { useState } from "react";
 import type { EventoCalendario } from "@/lib/calendario";
+import { MESES } from "@/lib/format";
+import { EventoFila } from "./CalendarioLista";
 
-interface Props {
+const DIAS_SEMANA = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
+
+export default function CalendarioGrilla({
+  eventos,
+  mes,
+  anio,
+}: {
   eventos: EventoCalendario[];
   mes: number;
   anio: number;
-}
+}) {
+  const hoy = new Date();
+  const esMesActual = hoy.getMonth() === mes && hoy.getFullYear() === anio;
+  const [seleccionado, setSeleccionado] = useState<number | null>(esMesActual ? hoy.getDate() : null);
 
-const DIAS_SEMANA = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
-
-export default function CalendarioGrilla({ eventos, mes, anio }: Props) {
-  const primerDia = new Date(anio, mes, 1).getDay(); // 0=Dom
+  // Semana empieza el lunes, como en los calendarios colombianos
+  const primerDia = (new Date(anio, mes, 1).getDay() + 6) % 7;
   const totalDias = new Date(anio, mes + 1, 0).getDate();
 
-  // Indexar eventos por día (número)
   const porDia = new Map<number, EventoCalendario[]>();
   for (const ev of eventos) {
     const dia = Number(ev.fecha.split("-")[2]);
@@ -23,48 +31,76 @@ export default function CalendarioGrilla({ eventos, mes, anio }: Props) {
     porDia.get(dia)!.push(ev);
   }
 
-  // Celdas: vacías iniciales + días del mes
   const celdas: (number | null)[] = [
     ...Array(primerDia).fill(null),
     ...Array.from({ length: totalDias }, (_, i) => i + 1),
   ];
+  while (celdas.length % 7 !== 0) celdas.push(null);
+
+  const delDia = seleccionado != null ? porDia.get(seleccionado) ?? [] : [];
 
   return (
-    <div className="calendario-grilla">
-      <div className="grilla-header">
+    <>
+      <div className="cal-grid">
         {DIAS_SEMANA.map((d) => (
-          <div key={d} className="grilla-dia-nombre">{d}</div>
+          <div key={d} className="cal-weekday">
+            {d}
+          </div>
         ))}
-      </div>
-      <div className="grilla-cuerpo">
         {celdas.map((dia, i) => {
-          if (dia === null) return <div key={`vacio-${i}`} className="grilla-celda vacia" />;
+          if (dia === null) return <div key={`vacio-${i}`} className="cal-day is-blank" aria-hidden />;
           const evs = porDia.get(dia) ?? [];
-          const tienePendiente = evs.some((e) => !e.pagado);
-          const tienePagado = evs.some((e) => e.pagado);
+          const esHoy = esMesActual && dia === hoy.getDate();
           return (
-            <div key={dia} className={`grilla-celda ${evs.length > 0 ? "con-eventos" : ""}`}>
-              <span className="celda-numero">{dia}</span>
+            <button
+              key={dia}
+              type="button"
+              className={`cal-day ${esHoy ? "is-today" : ""}`}
+              aria-pressed={seleccionado === dia}
+              aria-label={`${dia} de ${MESES[mes]}${evs.length ? `, ${evs.length} ${evs.length === 1 ? "pago" : "pagos"}` : ""}`}
+              onClick={() => setSeleccionado(dia)}
+            >
+              <span className="cal-num">{dia}</span>
+              {evs.slice(0, 2).map((ev) => (
+                <span key={`${ev.deuda_id}`} className={`cal-chip ${ev.pagado ? "is-paid" : ""}`}>
+                  {ev.nombre}
+                </span>
+              ))}
+              {evs.length > 2 && <span className="cal-more">y {evs.length - 2} más</span>}
               {evs.length > 0 && (
-                <div className="celda-dots">
-                  {tienePendiente && <span className="dot pendiente" title="Pendiente" />}
-                  {tienePagado && <span className="dot pagado" title="Pagado" />}
-                </div>
-              )}
-              {evs.length > 0 && (
-                <div className="celda-tooltips">
-                  {evs.map((ev) => (
-                    <Link key={ev.deuda_id} href={ev.tipo === "tarjeta" ? "/finanzas" : `/deudas/${ev.deuda_id}`} className="celda-tooltip-link">
-                      <span className={`dot-mini ${ev.pagado ? "pagado" : "pendiente"}`} />
-                      {ev.nombre}
-                    </Link>
+                <span className="cal-dots" aria-hidden>
+                  {evs.slice(0, 3).map((ev) => (
+                    <span key={ev.deuda_id} className={`cal-dot ${ev.pagado ? "is-paid" : ""}`} />
                   ))}
-                </div>
+                </span>
               )}
-            </div>
+            </button>
           );
         })}
       </div>
-    </div>
+
+      <section className="panel" style={{ marginTop: 20 }}>
+        {seleccionado == null ? (
+          <p className="muted">Elige un día para ver sus pagos.</p>
+        ) : (
+          <>
+            <div className="panel-head" style={{ marginBottom: delDia.length ? 4 : 0 }}>
+              <h2>
+                {seleccionado} de {MESES[mes].toLowerCase()}
+              </h2>
+            </div>
+            {delDia.length === 0 ? (
+              <p className="muted">Sin pagos este día.</p>
+            ) : (
+              <ul className="rows">
+                {delDia.map((ev) => (
+                  <EventoFila key={ev.deuda_id} ev={ev} />
+                ))}
+              </ul>
+            )}
+          </>
+        )}
+      </section>
+    </>
   );
 }

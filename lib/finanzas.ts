@@ -1,4 +1,5 @@
 import { db } from "./db";
+import { hoyColombia } from "./periodos";
 
 export type EstadoCuenta = "activa" | "inactiva" | "archivada";
 
@@ -79,18 +80,20 @@ export async function ensureCuentaEfectivo(userId: string) {
   }
 }
 
-// Registra un movimiento y actualiza el saldo de la cuenta en una sola transacción.
-// monto positivo = entra dinero, negativo = sale.
-export async function registrarMovimiento(opts: {
+type TipoMovimiento = "recarga" | "retiro" | "transferencia" | "pago_deuda" | "ajuste";
+
+// Sentencias para registrar un movimiento y ajustar el saldo. Se devuelven sueltas para
+// poder combinar varias en un mismo db.batch (que corre como una sola transacción).
+export function movimientoStmts(opts: {
   userId: string;
   cuentaId: number;
-  tipo: "recarga" | "retiro" | "transferencia" | "pago_deuda" | "ajuste";
-  monto: number;
+  tipo: TipoMovimiento;
+  monto: number; // positivo = entra dinero, negativo = sale
   descripcion?: string | null;
   fecha?: string;
 }) {
-  const fecha = opts.fecha ?? new Date().toISOString().slice(0, 10);
-  await db.batch([
+  const fecha = opts.fecha ?? hoyColombia();
+  return [
     {
       sql: `INSERT INTO movimientos (user_id, cuenta_id, tipo, monto, descripcion, fecha)
             VALUES (?, ?, ?, ?, ?, ?)`,
@@ -100,7 +103,12 @@ export async function registrarMovimiento(opts: {
       sql: "UPDATE cuentas SET saldo = saldo + ? WHERE id = ? AND user_id = ?",
       args: [opts.monto, opts.cuentaId, opts.userId],
     },
-  ]);
+  ];
+}
+
+// Registra un movimiento y actualiza el saldo de la cuenta en una sola transacción.
+export async function registrarMovimiento(opts: Parameters<typeof movimientoStmts>[0]) {
+  await db.batch(movimientoStmts(opts), "write");
 }
 
 export async function listIngresos(userId: string) {
@@ -121,15 +129,27 @@ export async function listIngresos(userId: string) {
   }));
 }
 
-export async function listMovimientos(userId: string, limit = 20) {
+export async function listMovimientos(
+  userId: string,
+  opts: { limit?: number; offset?: number; cuentaId?: number | null } = {}
+) {
+  const limit = opts.limit ?? 20;
+  const args: (string | number)[] = [userId];
+  let filtro = "";
+  if (opts.cuentaId) {
+    filtro = " AND m.cuenta_id = ?";
+    args.push(opts.cuentaId);
+  }
+  args.push(limit, opts.offset ?? 0);
   const res = await db.execute({
     sql: `SELECT m.*, c.nombre AS cuenta_nombre, c.moneda FROM movimientos m
           JOIN cuentas c ON c.id = m.cuenta_id
-          WHERE m.user_id = ? ORDER BY m.created_at DESC LIMIT ?`,
-    args: [userId, limit],
+          WHERE m.user_id = ?${filtro} ORDER BY m.fecha DESC, m.id DESC LIMIT ? OFFSET ?`,
+    args,
   });
   return res.rows.map((r) => ({
     id: Number(r.id),
+    cuenta_id: Number(r.cuenta_id),
     cuenta_nombre: String(r.cuenta_nombre),
     moneda: String(r.moneda),
     tipo: String(r.tipo),
@@ -138,3 +158,6 @@ export async function listMovimientos(userId: string, limit = 20) {
     fecha: String(r.fecha),
   }));
 }
+
+export type MovimientoItem = Awaited<ReturnType<typeof listMovimientos>>[number];
+export type IngresoItem = Awaited<ReturnType<typeof listIngresos>>[number];

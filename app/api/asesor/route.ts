@@ -45,7 +45,11 @@ export async function POST(req: NextRequest) {
       uso: await getEstadoUso(user.id),
     });
   } catch (e) {
-    const msg = e instanceof Error ? e.message : "Error generando el consejo";
-    return NextResponse.json({ error: msg }, { status: 502 });
+    // El detalle técnico queda en el log; al usuario le damos un mensaje accionable
+    console.error("[asesor]", e);
+    return NextResponse.json(
+      { error: "El asesor no está disponible en este momento. Intenta de nuevo en unos minutos; no se descontó la consulta." },
+      { status: 502 }
+    );
   }
 }

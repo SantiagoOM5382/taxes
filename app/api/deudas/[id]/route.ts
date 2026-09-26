@@ -1,92 +1,124 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { InValue } from "@libsql/client";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
-import type { InValue } from "@libsql/core/api";
+import { estadoSegunSaldo } from "@/lib/deudas";
 
-export async function PATCH(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+const FRECUENCIAS = ["semanal", "quincenal", "mensual", "semestral", "anual"];
+
+async function propia(id: string, userId: string) {
+  const res = await db.execute({
+    sql: `SELECT d.id, d.categoria, d.monto_inicial,
+            COALESCE((SELECT SUM(p.monto) FROM pagos p WHERE p.deuda_id = d.id), 0) AS total_pagado
+          FROM deudas d WHERE d.id = ? AND d.user_id = ?`,
+    args: [id, userId],
+  });
+  return res.rows[0] ?? null;
+}
+
+function error(msg: string) {
+  return NextResponse.json({ error: msg }, { status: 400 });
+}
+
+// Edita cualquier campo enviado. Campos: descripcion, acreedor, monto_inicial, tasa_interes,
+// fecha_vencimiento, frecuencia_pago, dia_pago, mes_pago, valor_estimado, estado.
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await getSession();
   if (!user) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
 
   const { id } = await params;
-
-  // Verificar que la deuda existe y pertenece al usuario
-  const check = await db.execute({
-    sql: "SELECT id, categoria FROM deudas WHERE id = ? AND user_id = ?",
-    args: [id, user.id],
-  });
-  if (!check.rows[0]) {
-    return NextResponse.json({ error: "No encontrada o sin permiso" }, { status: 404 });
-  }
+  const actual = await propia(id, user.id);
+  if (!actual) return NextResponse.json({ error: "No encontrada o sin permiso" }, { status: 404 });
+  const esDeuda = actual.categoria !== "responsabilidad";
+  const totalPagado = Number(actual.total_pagado);
 
   const body = await req.json().catch(() => ({}));
-  const { dia_pago, mes_pago, frecuencia_pago, valor_estimado } = body;
-
-  const frecuenciasValidas = ["semanal", "quincenal", "mensual", "semestral", "anual"];
-
-  // Validar dia_pago
-  let diaPagoVal: number | null = null;
-  if (dia_pago != null && dia_pago !== "") {
-    diaPagoVal = Number(dia_pago);
-    if (!Number.isInteger(diaPagoVal) || diaPagoVal < 1 || diaPagoVal > 31) {
-      return NextResponse.json({ error: "dia_pago debe ser entero entre 1 y 31" }, { status: 400 });
-    }
-  }
-
-  // Validar mes_pago
-  let mesPagoVal: number | null = null;
-  if (mes_pago != null && mes_pago !== "") {
-    mesPagoVal = Number(mes_pago);
-    if (!Number.isInteger(mesPagoVal) || mesPagoVal < 1 || mesPagoVal > 12) {
-      return NextResponse.json({ error: "mes_pago debe ser entero entre 1 y 12" }, { status: 400 });
-    }
-  }
-
-  // Validar frecuencia_pago
-  const frecuenciaVal =
-    frecuencia_pago && frecuenciasValidas.includes(frecuencia_pago) ? frecuencia_pago : undefined;
-
-  // Validar valor_estimado
-  let estimadoVal: number | null | undefined = undefined;
-  if (valor_estimado !== undefined) {
-    estimadoVal = valor_estimado === null || valor_estimado === "" ? null : Number(valor_estimado);
-    if (estimadoVal !== null && (!Number.isFinite(estimadoVal) || estimadoVal < 0)) {
-      return NextResponse.json({ error: "valor_estimado debe ser >= 0" }, { status: 400 });
-    }
-  }
-
-  // Construir SET dinámico con solo los campos enviados
   const sets: string[] = [];
   const args: InValue[] = [];
+  const set = (col: string, val: InValue) => {
+    sets.push(`${col} = ?`);
+    args.push(val);
+  };
+  const vacio = (v: unknown) => v === null || v === "";
 
-  if (diaPagoVal !== undefined || dia_pago === null) {
-    sets.push("dia_pago = ?");
-    args.push(dia_pago === null ? null : diaPagoVal);
+  if (body.descripcion !== undefined) {
+    const d = String(body.descripcion ?? "").trim();
+    if (!d) return error("La descripción no puede quedar vacía");
+    set("descripcion", d.slice(0, 120));
   }
-  if (mesPagoVal !== undefined || mes_pago === null) {
-    sets.push("mes_pago = ?");
-    args.push(mes_pago === null ? null : mesPagoVal);
-  }
-  if (frecuenciaVal !== undefined) {
-    sets.push("frecuencia_pago = ?");
-    args.push(frecuenciaVal);
-  }
-  if (estimadoVal !== undefined) {
-    sets.push("valor_estimado = ?");
-    args.push(estimadoVal);
+  if (body.acreedor !== undefined) {
+    set("acreedor", vacio(body.acreedor) ? null : String(body.acreedor).trim().slice(0, 120));
   }
 
-  if (sets.length === 0) {
-    return NextResponse.json({ error: "Nada que actualizar" }, { status: 400 });
+  let montoInicial = Number(actual.monto_inicial);
+  if (body.monto_inicial !== undefined && esDeuda) {
+    montoInicial = Number(body.monto_inicial);
+    if (!Number.isFinite(montoInicial) || montoInicial <= 0) return error("El monto total debe ser mayor a 0");
+    if (montoInicial < totalPagado) return error("El monto total no puede ser menor a lo que ya pagaste");
+    set("monto_inicial", montoInicial);
   }
+  if (body.tasa_interes !== undefined) {
+    const t = vacio(body.tasa_interes) ? null : Number(body.tasa_interes);
+    if (t !== null && (!Number.isFinite(t) || t < 0)) return error("El interés debe ser 0 o más");
+    set("tasa_interes", t);
+  }
+  if (body.fecha_vencimiento !== undefined) {
+    const f = vacio(body.fecha_vencimiento) ? null : String(body.fecha_vencimiento);
+    if (f !== null && !/^\d{4}-\d{2}-\d{2}$/.test(f)) return error("La fecha de vencimiento no es válida");
+    set("fecha_vencimiento", f);
+  }
+  if (body.frecuencia_pago !== undefined) {
+    if (!FRECUENCIAS.includes(body.frecuencia_pago)) return error("Frecuencia no válida");
+    set("frecuencia_pago", body.frecuencia_pago);
+  }
+  if (body.dia_pago !== undefined) {
+    const d = vacio(body.dia_pago) ? null : Number(body.dia_pago);
+    if (d !== null && (!Number.isInteger(d) || d < 1 || d > 31)) return error("El día de pago va de 1 a 31");
+    set("dia_pago", d);
+  }
+  if (body.mes_pago !== undefined) {
+    const m = vacio(body.mes_pago) ? null : Number(body.mes_pago);
+    if (m !== null && (!Number.isInteger(m) || m < 1 || m > 12)) return error("El mes de pago no es válido");
+    set("mes_pago", m);
+  }
+  if (body.valor_estimado !== undefined) {
+    const v = vacio(body.valor_estimado) ? null : Number(body.valor_estimado);
+    if (v !== null && (!Number.isFinite(v) || v < 0)) return error("El valor por pago debe ser 0 o más");
+    set("valor_estimado", v);
+  }
+
+  if (body.estado !== undefined) {
+    if (body.estado !== "activa" && body.estado !== "archivada") return error("Estado no válido");
+    set("estado", body.estado);
+  } else if (esDeuda && body.monto_inicial !== undefined) {
+    // Si cambia el monto total, el estado sigue a lo que falte por pagar
+    set("estado", estadoSegunSaldo(montoInicial, totalPagado));
+  }
+
+  if (sets.length === 0) return error("Nada que actualizar");
 
   args.push(id, user.id);
-  await db.execute({
-    sql: `UPDATE deudas SET ${sets.join(", ")} WHERE id = ? AND user_id = ?`,
-    args,
-  });
+  await db.execute({ sql: `UPDATE deudas SET ${sets.join(", ")} WHERE id = ? AND user_id = ?`, args });
+  return NextResponse.json({ ok: true });
+}
 
+// Elimina la deuda con sus pagos y accesos compartidos.
+// Los saldos de las cuentas no cambian: el dinero pagado ya salió.
+export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const user = await getSession();
+  if (!user) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+
+  const { id } = await params;
+  const actual = await propia(id, user.id);
+  if (!actual) return NextResponse.json({ error: "No encontrada o sin permiso" }, { status: 404 });
+
+  await db.batch(
+    [
+      { sql: "DELETE FROM pagos WHERE deuda_id = ?", args: [actual.id] },
+      { sql: "DELETE FROM deuda_accesos WHERE deuda_id = ?", args: [actual.id] },
+      { sql: "DELETE FROM deudas WHERE id = ? AND user_id = ?", args: [actual.id, user.id] },
+    ],
+    "write"
+  );
   return NextResponse.json({ ok: true });
 }

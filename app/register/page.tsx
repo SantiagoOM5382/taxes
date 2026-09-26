@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { UserPlus } from "lucide-react";
-import "../login/auth.css";
+import AuthShell from "@/components/AuthShell";
+import Field from "@/components/Field";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -24,11 +24,11 @@ export default function RegisterPage() {
         email: form.get("email"),
         password: form.get("password"),
       }),
-    });
-    setLoading(false);
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      setError(data.error ?? "Error al registrarse");
+    }).catch(() => null);
+    if (!res?.ok) {
+      setLoading(false);
+      const data = await res?.json().catch(() => ({}));
+      setError(data?.error ?? "No se pudo crear la cuenta. Revisa tu conexión.");
       return;
     }
     router.push("/dashboard");
@@ -36,72 +36,31 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="auth-container">
-      <div className="auth-card">
-        <div className="auth-header">
-          <div className="auth-icon">
-            <UserPlus size={32} />
-          </div>
-          <h1>Crear cuenta</h1>
-          <p>Comienza a gestionar tu salud financiera</p>
-        </div>
-
-        <form onSubmit={onSubmit} className="auth-form">
-          <div className="form-group">
-            <label htmlFor="nombre">Nombre completo</label>
-            <input
-              id="nombre"
-              name="nombre"
-              type="text"
-              placeholder="Tu nombre"
-              required
-              autoComplete="name"
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="email">Email</label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              placeholder="tu@email.com"
-              required
-              autoComplete="email"
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="password">Contraseña</label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              placeholder="Mínimo 6 caracteres"
-              minLength={6}
-              required
-              autoComplete="new-password"
-            />
-          </div>
-
-          {error && <div className="form-error">{error}</div>}
-
-          <button type="submit" disabled={loading} className="auth-button primary">
-            {loading ? "Creando cuenta..." : "Registrarse"}
-          </button>
-        </form>
-
-        <div className="auth-footer">
-          <p>
-            ¿Ya tienes cuenta?{" "}
-            <Link href="/login" className="auth-link">
-              Inicia sesión
-            </Link>
+    <AuthShell>
+      <h1>Crea tu cuenta</h1>
+      <p className="page-sub">Es gratis. Solo necesitas un correo.</p>
+      <form onSubmit={onSubmit}>
+        <Field label="Nombre">
+          <input name="nombre" type="text" required autoComplete="name" autoFocus />
+        </Field>
+        <Field label="Correo">
+          <input name="email" type="email" placeholder="nombre@correo.com" required autoComplete="email" />
+        </Field>
+        <Field label="Contraseña" hint="Mínimo 6 caracteres.">
+          <input name="password" type="password" minLength={6} required autoComplete="new-password" />
+        </Field>
+        {error && (
+          <p className="form-error" role="alert">
+            {error}
           </p>
-        </div>
-      </div>
-
-      <div className="auth-background"></div>
-    </div>
+        )}
+        <button type="submit" disabled={loading} className="btn btn-primary btn-block" style={{ minHeight: 46 }}>
+          {loading ? "Creando cuenta…" : "Crear cuenta"}
+        </button>
+      </form>
+      <p className="auth-switch">
+        ¿Ya tienes cuenta? <Link href="/login">Inicia sesión</Link>
+      </p>
+    </AuthShell>
   );
 }

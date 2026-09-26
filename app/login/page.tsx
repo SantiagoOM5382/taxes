@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { LogIn } from "lucide-react";
-import "./auth.css";
+import AuthShell from "@/components/AuthShell";
+import Field from "@/components/Field";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -20,11 +20,11 @@ export default function LoginPage() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email: form.get("email"), password: form.get("password") }),
-    });
-    setLoading(false);
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      setError(data.error ?? "Error al iniciar sesión");
+    }).catch(() => null);
+    if (!res?.ok) {
+      setLoading(false);
+      const data = await res?.json().catch(() => ({}));
+      setError(data?.error ?? "No se pudo iniciar sesión. Revisa tu conexión.");
       return;
     }
     router.push("/dashboard");
@@ -32,59 +32,28 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="auth-container">
-      <div className="auth-card">
-        <div className="auth-header">
-          <div className="auth-icon">
-            <LogIn size={32} />
-          </div>
-          <h1>Bienvenido de vuelta</h1>
-          <p>Accede a tu panel de control financiero</p>
-        </div>
-
-        <form onSubmit={onSubmit} className="auth-form">
-          <div className="form-group">
-            <label htmlFor="email">Email</label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              placeholder="tu@email.com"
-              required
-              autoComplete="email"
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="password">Contraseña</label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              placeholder="••••••••"
-              required
-              autoComplete="current-password"
-            />
-          </div>
-
-          {error && <div className="form-error">{error}</div>}
-
-          <button type="submit" disabled={loading} className="auth-button primary">
-            {loading ? "Entrando..." : "Iniciar sesión"}
-          </button>
-        </form>
-
-        <div className="auth-footer">
-          <p>
-            ¿No tienes cuenta?{" "}
-            <Link href="/register" className="auth-link">
-              Crear cuenta
-            </Link>
+    <AuthShell>
+      <h1>Inicia sesión</h1>
+      <p className="page-sub">Entra para ver cómo van tus cuentas.</p>
+      <form onSubmit={onSubmit}>
+        <Field label="Correo">
+          <input name="email" type="email" placeholder="nombre@correo.com" required autoComplete="email" autoFocus />
+        </Field>
+        <Field label="Contraseña">
+          <input name="password" type="password" required autoComplete="current-password" />
+        </Field>
+        {error && (
+          <p className="form-error" role="alert">
+            {error}
           </p>
-        </div>
-      </div>
-
-      <div className="auth-background"></div>
-    </div>
+        )}
+        <button type="submit" disabled={loading} className="btn btn-primary btn-block" style={{ minHeight: 46 }}>
+          {loading ? "Entrando…" : "Iniciar sesión"}
+        </button>
+      </form>
+      <p className="auth-switch">
+        ¿No tienes cuenta? <Link href="/register">Crea una gratis</Link>
+      </p>
+    </AuthShell>
   );
 }

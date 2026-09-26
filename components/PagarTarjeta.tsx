@@ -3,100 +3,90 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Cuenta } from "@/lib/finanzas";
-
-interface Props {
-  tarjeta: Cuenta;
-  cuentas: Cuenta[];
-}
+import { fmtMoneda } from "@/lib/format";
+import Modal from "./Modal";
+import Field from "./Field";
 
 type Accion = "pagar" | "capital" | null;
 
-export default function PagarTarjeta({ tarjeta, cuentas }: Props) {
+export default function PagarTarjeta({ tarjeta, cuentas }: { tarjeta: Cuenta; cuentas: Cuenta[] }) {
   const router = useRouter();
   const [accion, setAccion] = useState<Accion>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const otras = cuentas.filter((c) => c.id !== tarjeta.id && c.estado === "activa");
+  // Solo cuentas en la misma moneda de la tarjeta, para no mezclar pesos con dólares
+  const otras = cuentas.filter(
+    (c) => c.id !== tarjeta.id && c.estado === "activa" && !c.es_credito && c.moneda === tarjeta.moneda
+  );
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError("");
     setLoading(true);
     const form = new FormData(e.currentTarget);
-    const cuentaOrigen = form.get("cuenta_origen");
-    const monto = form.get("monto");
-    const descripcion =
-      accion === "pagar"
-        ? `Pago tarjeta ${tarjeta.nombre}`
-        : `Aumento de capital ${tarjeta.nombre}`;
-
     const res = await fetch("/api/movimientos", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         tipo: "transferencia",
-        cuenta_origen: Number(cuentaOrigen),
+        cuenta_origen: Number(form.get("cuenta_origen")),
         cuenta_destino: tarjeta.id,
-        monto: Number(monto),
-        descripcion,
+        monto: Number(form.get("monto")),
+        descripcion: accion === "pagar" ? `Pago tarjeta ${tarjeta.nombre}` : `Aumento de capital ${tarjeta.nombre}`,
       }),
-    });
+    }).catch(() => null);
     setLoading(false);
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      setError(data.error ?? "Error al registrar");
+    if (!res?.ok) {
+      const data = await res?.json().catch(() => ({}));
+      setError(data?.error ?? "No se pudo registrar. Intenta de nuevo.");
       return;
     }
     setAccion(null);
     router.refresh();
   }
 
-  const fmt = (n: number) =>
-    new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 }).format(n);
-
   return (
-    <div className="pagar-tarjeta">
-      {accion === null ? (
-        <div style={{ display: "flex", gap: 6 }}>
-          <button className="btn-secundario" onClick={() => setAccion("pagar")}>
-            Pagar tarjeta
-          </button>
-          <button className="btn-secundario" onClick={() => setAccion("capital")}>
-            Agregar capital
-          </button>
-        </div>
-      ) : (
-        <form onSubmit={onSubmit} className="editar-cuenta-form">
-          <strong style={{ fontSize: 14 }}>
-            {accion === "pagar" ? "Pagar tarjeta" : "Agregar capital"} — {tarjeta.nombre}{" "}
-            <span className="muted">({fmt(tarjeta.saldo)} disponible)</span>
-          </strong>
-
-          <label>Desde qué cuenta sale el dinero</label>
-          <select name="cuenta_origen" required>
-            <option value="">— Seleccioná una cuenta —</option>
-            {otras.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.nombre} ({fmt(c.saldo)})
+    <div className="row-actions">
+      <button className="btn btn-ghost btn-sm" onClick={() => setAccion("capital")}>
+        Agregar capital
+      </button>
+      <button className="btn btn-primary btn-sm" onClick={() => setAccion("pagar")}>
+        Pagar tarjeta
+      </button>
+      <Modal
+        open={accion !== null}
+        onClose={() => setAccion(null)}
+        title={accion === "pagar" ? `Pagar ${tarjeta.nombre}` : `Agregar capital a ${tarjeta.nombre}`}
+      >
+        <p className="muted" style={{ marginBottom: 16 }}>
+          Disponible ahora: <span className="money">{fmtMoneda(tarjeta.moneda, tarjeta.saldo)}</span>
+        </p>
+        <form onSubmit={onSubmit}>
+          <Field label="Sale de la cuenta">
+            <select name="cuenta_origen" required defaultValue="">
+              <option value="" disabled>
+                Elige una cuenta
               </option>
-            ))}
-          </select>
-
-          <label>Monto (COP)</label>
-          <input name="monto" type="number" min="1" step="any" required />
-
-          {error && <p className="error">{error}</p>}
-          <div style={{ display: "flex", gap: 6 }}>
-            <button disabled={loading} style={{ fontSize: 13, padding: "5px 12px" }}>
-              {loading ? "Registrando..." : "Confirmar"}
-            </button>
-            <button type="button" className="btn-secundario" onClick={() => setAccion(null)}>
-              Cancelar
-            </button>
-          </div>
+              {otras.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.nombre} ({fmtMoneda(c.moneda, c.saldo)})
+                </option>
+              ))}
+            </select>
+          </Field>
+          {otras.length === 0 && (
+            <p className="form-error">No tienes cuentas activas en {tarjeta.moneda} desde donde pagar.</p>
+          )}
+          <Field label={`Monto (${tarjeta.moneda})`}>
+            <input name="monto" type="number" inputMode="decimal" min="1" step="any" required />
+          </Field>
+          {error && <p className="form-error">{error}</p>}
+          <button className="btn btn-primary btn-block" disabled={loading}>
+            {loading ? "Registrando…" : accion === "pagar" ? "Pagar tarjeta" : "Agregar capital"}
+          </button>
         </form>
-      )}
+      </Modal>
     </div>
   );
 }

@@ -1,52 +1,52 @@
 "use client";
 
 import { useState } from "react";
+import { Plus, ArrowLeftRight, Landmark, Wallet, Globe, Banknote, CreditCard } from "lucide-react";
 import Modal from "./Modal";
 import NuevaCuenta from "./NuevaCuenta";
 import NuevoIngreso from "./NuevoIngreso";
 import NuevoMovimiento from "./NuevoMovimiento";
 import EliminarIngreso from "./EliminarIngreso";
 import CuentaAcciones from "./CuentaAcciones";
-import EditarCuenta from "./EditarCuenta";
-import PagarTarjeta from "./PagarTarjeta";
-import type { Cuenta } from "@/lib/finanzas";
-
-interface Ingreso {
-  id: number;
-  descripcion: string;
-  monto: number;
-  frecuencia: string;
-  tipo: string;
-  cuenta_nombre: string | null;
-}
-
-interface Movimiento {
-  id: number;
-  cuenta_nombre: string;
-  moneda: string;
-  tipo: string;
-  monto: number;
-  descripcion: string | null;
-  fecha: string;
-}
-
-function fmt(moneda: string, valor: number) {
-  return new Intl.NumberFormat("es-CO", {
-    style: "currency",
-    currency: moneda,
-    maximumFractionDigits: moneda === "COP" ? 0 : 2,
-  }).format(valor);
-}
-
-const FRECUENCIA_LABEL: Record<string, string> = {
-  semanal: "Semanal",
-  quincenal: "Quincenal",
-  mensual: "Mensual",
-  unico: "Único",
-};
+import Desplegable from "./Desplegable";
+import type { Cuenta, IngresoItem, MovimientoItem } from "@/lib/finanzas";
+import MovimientosLista from "./MovimientosLista";
+import Accion from "./Accion";
+import { fmtMoneda, fmtFrecuencia, TIPOS_CUENTA } from "@/lib/format";
 
 type Tab = "cuentas" | "ingresos" | "movimientos";
-type ModalAbierto = "cuenta" | "ingreso" | "movimiento" | null;
+type ModalAbierto = "cuenta" | "ingreso" | "movimiento" | { editar: IngresoItem } | null;
+
+const ICONO_TIPO: Record<string, typeof Landmark> = {
+  banco: Landmark,
+  billetera: Wallet,
+  exchange: Globe,
+  efectivo: Banknote,
+};
+
+function CuentaFila({ c }: { c: Cuenta }) {
+  const Icono = c.es_credito ? CreditCard : ICONO_TIPO[c.tipo] ?? Wallet;
+  const archivada = c.estado === "archivada";
+  return (
+    <li className={`row row-wrap ${archivada ? "is-muted" : ""}`}>
+      <span className="row-icon" aria-hidden>
+        <Icono size={18} />
+      </span>
+      <div className="row-main">
+        <div className="row-title">{c.nombre}</div>
+        <div className="row-sub">
+          {c.es_credito ? "Tarjeta de crédito" : TIPOS_CUENTA[c.tipo] ?? c.tipo}, {c.moneda}
+          {c.estado === "inactiva" && <span className="tag tag-warn" style={{ marginLeft: 8 }}>Desactivada</span>}
+        </div>
+      </div>
+      <div className="row-end">
+        <div className={`row-amount money ${c.saldo < 0 ? "money-debt" : ""}`}>{fmtMoneda(c.moneda, c.saldo)}</div>
+        {c.es_credito && <div className="row-amount-sub">disponible</div>}
+      </div>
+      <CuentaAcciones cuenta={c} />
+    </li>
+  );
+}
 
 export default function FinanzasTabs({
   cuentas,
@@ -54,8 +54,8 @@ export default function FinanzasTabs({
   movimientos,
 }: {
   cuentas: Cuenta[];
-  ingresos: Ingreso[];
-  movimientos: Movimiento[];
+  ingresos: IngresoItem[];
+  movimientos: MovimientoItem[];
 }) {
   const [tab, setTab] = useState<Tab>("cuentas");
   const [modal, setModal] = useState<ModalAbierto>(null);
@@ -64,202 +64,125 @@ export default function FinanzasTabs({
   const visibles = cuentas.filter((c) => c.estado !== "archivada");
   const archivadas = cuentas.filter((c) => c.estado === "archivada");
   const activas = cuentas.filter((c) => c.estado === "activa");
+  // Los ingresos están en pesos: solo se asocian a cuentas activas en COP que no sean tarjeta
+  const cop = activas.filter((c) => c.moneda === "COP" && !c.es_credito);
+  const cuentaCOP = (id: number | null) => id != null && cop.some((c) => c.id === id);
+
+  const TABS: { id: Tab; label: string }[] = [
+    { id: "cuentas", label: "Cuentas" },
+    { id: "ingresos", label: "Ingresos" },
+    { id: "movimientos", label: "Movimientos" },
+  ];
 
   return (
-    <>
-      <div className="tabs">
-        <button className={`tab ${tab === "cuentas" ? "activa" : ""}`} onClick={() => setTab("cuentas")}>
-          Mis cuentas
-        </button>
-        <button className={`tab ${tab === "ingresos" ? "activa" : ""}`} onClick={() => setTab("ingresos")}>
-          Mis ingresos
-        </button>
-        <button
-          className={`tab ${tab === "movimientos" ? "activa" : ""}`}
-          onClick={() => setTab("movimientos")}
-        >
-          Últimos movimientos
-        </button>
+    <section className="panel">
+      <div className="tabs" role="tablist">
+        {TABS.map((t) => (
+          <button
+            key={t.id}
+            role="tab"
+            className="tab"
+            aria-selected={tab === t.id}
+            onClick={() => setTab(t.id)}
+          >
+            {t.label}
+          </button>
+        ))}
       </div>
 
       {tab === "cuentas" && (
-        <div className="tab-panel">
-          <div className="panel-header">
-            <h2>Mis cuentas</h2>
-            <button className="boton" onClick={() => setModal("cuenta")}>
-              + Agregar cuenta
+        <div role="tabpanel">
+          <div className="panel-head">
+            <p className="muted">Nequi, bancos, exchanges, efectivo y tarjetas.</p>
+            <button className="btn btn-primary btn-sm" onClick={() => setModal("cuenta")}>
+              <Plus size={15} aria-hidden />
+              Agregar cuenta
             </button>
           </div>
           {visibles.length === 0 ? (
-            <p className="muted">Registra tus cuentas: Nequi, Bancolombia, Binance, efectivo...</p>
+            <div className="empty">Agrega tu primera cuenta para ver cuánto dinero tienes.</div>
           ) : (
-            <>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Cuenta</th>
-                    <th>Tipo</th>
-                    <th>Moneda</th>
-                    <th>Saldo</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {visibles.map((c) => (
-                    <tr key={c.id}>
-                      <td>
-                        {c.nombre}{" "}
-                        {c.es_credito && c.dia_pago_credito && (
-                          <span className="badge credito">Pago: día {c.dia_pago_credito}</span>
-                        )}{" "}
-                        {c.estado === "inactiva" && <span className="badge inactiva">desactivada</span>}
-                      </td>
-                      <td>{c.tipo}</td>
-                      <td>{c.moneda}</td>
-                      <td className={`monto ${c.saldo < 0 ? "negativo" : ""}`}>
-                        {fmt(c.moneda, c.saldo)}
-                        {c.es_credito && c.limite_credito != null && (
-                          <div style={{ fontSize: 11, color: "#888", fontWeight: "normal" }}>
-                            Cupo: {fmt(c.moneda, c.limite_credito)} | Disponible: {fmt(c.moneda, c.saldo)}
-                          </div>
-                        )}
-                      </td>
-                      <td style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
-                        <CuentaAcciones cuenta={c} />
-                        <EditarCuenta
-                          cuentaId={c.id}
-                          esCreditoActual={c.es_credito}
-                          diaPagoActual={c.dia_pago_credito}
-                          limiteCreditoActual={c.limite_credito}
-                        />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              {activas.filter((c) => c.es_credito).map((c) => (
-                <div key={c.id} style={{ marginTop: 12 }}>
-                  <PagarTarjeta tarjeta={c} cuentas={cuentas} />
-                </div>
+            <ul className="rows">
+              {visibles.map((c) => (
+                <CuentaFila key={c.id} c={c} />
               ))}
-            </>
+            </ul>
           )}
-
           {archivadas.length > 0 && (
-            <>
-              <h2 style={{ marginTop: 22 }}>Cuentas archivadas</h2>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Cuenta</th>
-                    <th>Tipo</th>
-                    <th>Moneda</th>
-                    <th>Saldo</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {archivadas.map((c) => (
-                    <tr key={c.id} style={{ opacity: 0.65 }}>
-                      <td>
-                        {c.nombre}{" "}
-                        {c.es_credito && c.dia_pago_credito && (
-                          <span className="badge credito">Pago: día {c.dia_pago_credito}</span>
-                        )}
-                      </td>
-                      <td>{c.tipo}</td>
-                      <td>{c.moneda}</td>
-                      <td className="monto">{fmt(c.moneda, c.saldo)}</td>
-                      <td>
-                        <CuentaAcciones cuenta={c} />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </>
+            <Desplegable label={`Archivadas (${archivadas.length})`}>
+              <ul className="rows">
+                {archivadas.map((c) => (
+                  <CuentaFila key={c.id} c={c} />
+                ))}
+              </ul>
+            </Desplegable>
           )}
         </div>
       )}
 
       {tab === "ingresos" && (
-        <div className="tab-panel">
-          <div className="panel-header">
-            <h2>Mis ingresos</h2>
-            <button className="boton" onClick={() => setModal("ingreso")}>
-              + Registrar ingreso
+        <div role="tabpanel">
+          <div className="panel-head">
+            <p className="muted">Sueldo base e ingresos extra.</p>
+            <button className="btn btn-primary btn-sm" onClick={() => setModal("ingreso")}>
+              <Plus size={15} aria-hidden />
+              Registrar ingreso
             </button>
           </div>
           {ingresos.length === 0 ? (
-            <p className="muted">Registra tu sueldo base e ingresos extra.</p>
+            <div className="empty">Registra tu sueldo para que el asesor calcule tu capacidad de ahorro.</div>
           ) : (
-            <table>
-              <thead>
-                <tr>
-                  <th>Descripción</th>
-                  <th>Tipo</th>
-                  <th>Frecuencia</th>
-                  <th>Monto por pago</th>
-                  <th>Cae en</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {ingresos.map((i) => (
-                  <tr key={i.id}>
-                    <td>{i.descripcion}</td>
-                    <td>{i.tipo === "base" ? "Sueldo base" : "Extra"}</td>
-                    <td>{FRECUENCIA_LABEL[i.frecuencia] ?? i.frecuencia}</td>
-                    <td className="monto">{fmt("COP", i.monto)}</td>
-                    <td>{i.cuenta_nombre ?? "—"}</td>
-                    <td>
-                      <EliminarIngreso id={i.id} />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <ul className="rows">
+              {ingresos.map((i) => (
+                <li key={i.id} className="row row-wrap">
+                  <div className="row-main">
+                    <div className="row-title">{i.descripcion}</div>
+                    <div className="row-sub">
+                      {[i.tipo === "base" ? "Sueldo base" : "Extra", fmtFrecuencia(i.frecuencia).toLowerCase(), i.cuenta_nombre ? `cae en ${i.cuenta_nombre}` : null]
+                        .filter(Boolean)
+                        .join(", ")}
+                    </div>
+                  </div>
+                  <div className="row-end">
+                    <div className="row-amount money money-paid">{fmtMoneda("COP", i.monto)}</div>
+                  </div>
+                  <div className="row-actions">
+                    {cuentaCOP(i.cuenta_id) && (
+                      <Accion
+                        url="/api/movimientos"
+                        body={{ tipo: "recarga", cuenta_id: i.cuenta_id, monto: i.monto, descripcion: i.descripcion }}
+                        confirmar={`¿Registrar que te llegaron ${fmtMoneda("COP", i.monto)} en ${i.cuenta_nombre}? Se suma al saldo.`}
+                        title="Suma este ingreso al saldo de su cuenta"
+                      >
+                        Lo recibí
+                      </Accion>
+                    )}
+                    <button className="btn btn-quiet btn-sm" onClick={() => setModal({ editar: i })}>
+                      Editar
+                    </button>
+                    <EliminarIngreso id={i.id} descripcion={i.descripcion} />
+                  </div>
+                </li>
+              ))}
+            </ul>
           )}
         </div>
       )}
 
       {tab === "movimientos" && (
-        <div className="tab-panel">
-          <div className="panel-header">
-            <h2>Últimos movimientos</h2>
-            <button className="boton" onClick={() => setModal("movimiento")} disabled={activas.length === 0}>
-              + Mover dinero
+        <div role="tabpanel">
+          <div className="panel-head">
+            <p className="muted">Recargas, retiros, transferencias y pagos.</p>
+            <button
+              className="btn btn-primary btn-sm"
+              onClick={() => setModal("movimiento")}
+              disabled={activas.length === 0}
+            >
+              <ArrowLeftRight size={15} aria-hidden />
+              Mover dinero
             </button>
           </div>
-          {movimientos.length === 0 ? (
-            <p className="muted">Aún no hay movimientos.</p>
-          ) : (
-            <table>
-              <thead>
-                <tr>
-                  <th>Fecha</th>
-                  <th>Cuenta</th>
-                  <th>Tipo</th>
-                  <th>Descripción</th>
-                  <th>Monto</th>
-                </tr>
-              </thead>
-              <tbody>
-                {movimientos.map((m) => (
-                  <tr key={m.id}>
-                    <td>{m.fecha}</td>
-                    <td>{m.cuenta_nombre}</td>
-                    <td>{m.tipo.replace("_", " ")}</td>
-                    <td>{m.descripcion ?? "—"}</td>
-                    <td className={`monto ${m.monto < 0 ? "negativo" : "positivo"}`}>
-                      {m.monto > 0 ? "+" : ""}
-                      {fmt(m.moneda, m.monto)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+          <MovimientosLista iniciales={movimientos} cuentas={visibles} />
         </div>
       )}
 
@@ -267,11 +190,16 @@ export default function FinanzasTabs({
         <NuevaCuenta onSuccess={cerrar} />
       </Modal>
       <Modal open={modal === "ingreso"} onClose={cerrar} title="Registrar ingreso">
-        <NuevoIngreso cuentas={activas} onSuccess={cerrar} />
+        <NuevoIngreso cuentas={cop} onSuccess={cerrar} />
+      </Modal>
+      <Modal open={typeof modal === "object" && modal !== null} onClose={cerrar} title="Editar ingreso">
+        {typeof modal === "object" && modal !== null && (
+          <NuevoIngreso key={modal.editar.id} ingreso={modal.editar} cuentas={cop} onSuccess={cerrar} />
+        )}
       </Modal>
       <Modal open={modal === "movimiento"} onClose={cerrar} title="Mover dinero">
         <NuevoMovimiento cuentas={activas} onSuccess={cerrar} />
       </Modal>
-    </>
+    </section>
   );
 }

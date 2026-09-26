@@ -2,19 +2,9 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Upload } from "lucide-react";
 
-export default function SubirComprobante({
-  deudaId,
-  pagoId,
-  subidaDisponible,
-}: {
-  deudaId: number;
-  pagoId: number | string | null;
-  subidaDisponible: boolean;
-}) {
-  if (pagoId == null) {
-    return <span className="muted">—</span>;
-  }
+export default function SubirComprobante({ deudaId, pagoId }: { deudaId: number; pagoId: string }) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [loading, setLoading] = useState(false);
@@ -27,48 +17,38 @@ export default function SubirComprobante({
     try {
       const fd = new FormData();
       fd.append("archivo", file);
-      const res = await fetch(`/api/deudas/${deudaId}/pagos/${pagoId}/comprobante`, {
-        method: "POST",
-        body: fd,
-      });
+      const res = await fetch(`/api/deudas/${deudaId}/pagos/${pagoId}/comprobante`, { method: "POST", body: fd });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error ?? "Error al subir comprobante");
+        throw new Error(data.error ?? "No se pudo subir");
       }
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error inesperado");
+      setError(err instanceof Error ? err.message : "No se pudo subir");
     } finally {
       setLoading(false);
+      if (inputRef.current) inputRef.current.value = "";
     }
   }
 
   return (
-    <div>
-      {subidaDisponible ? (
-        <>
-          <input
-            ref={inputRef}
-            type="file"
-            accept="image/*,.pdf"
-            style={{ display: "none" }}
-            onChange={(e) => {
-              const file = e.target.files?.[0] ?? null;
-              handleFile(file);
-            }}
-          />
-          <button
-            type="button"
-            onClick={() => inputRef.current?.click()}
-            disabled={loading}
-          >
-            {loading ? "Subiendo..." : "Subir comprobante"}
-          </button>
-          {error && <p className="error">{error}</p>}
-        </>
-      ) : (
-        <span className="muted">—</span>
+    <>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*,.pdf"
+        hidden
+        onChange={(e) => handleFile(e.target.files?.[0] ?? null)}
+      />
+      <button type="button" className="btn btn-ghost btn-sm" onClick={() => inputRef.current?.click()} disabled={loading}>
+        <Upload size={14} aria-hidden />
+        {loading ? "Subiendo…" : "Adjuntar"}
+      </button>
+      {error && (
+        <div className="hint" style={{ color: "var(--debt)", marginTop: 4 }}>
+          {error}
+        </div>
       )}
-    </div>
+    </>
   );
 }
