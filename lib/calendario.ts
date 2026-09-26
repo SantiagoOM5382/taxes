@@ -19,7 +19,9 @@ function ultimoDiaMes(anio: number, mes: number): number {
 }
 
 // Días del mes en que vence un pago programado, usando dia_pago como ancla
-export function diasEnMes(r: Programado, mes: number, anio: number): number[] {
+export type Programacion = Pick<Programado, "dia_pago" | "frecuencia_pago" | "mes_pago" | "created_at">;
+
+export function diasEnMes(r: Programacion, mes: number, anio: number): number[] {
   if (!r.dia_pago) return [];
   const ult = ultimoDiaMes(anio, mes);
   const dia = Math.min(r.dia_pago, ult);
@@ -31,9 +33,16 @@ export function diasEnMes(r: Programado, mes: number, anio: number): number[] {
       return [...new Set([dia, otro])].sort((a, b) => a - b);
     }
     case "semanal": {
+      // Cada 7 días de verdad: mismo día de la semana que la fecha de referencia
+      // (día y mes de pago, en el año en que se creó), en vez de repetir el mismo número cada mes.
+      const creado = new Date(String(r.created_at).replace(" ", "T"));
+      const anioRef = Number.isNaN(creado.getTime()) ? anio : creado.getFullYear();
+      const mesRef = r.mes_pago ? r.mes_pago - 1 : Number.isNaN(creado.getTime()) ? mes : creado.getMonth();
+      const dow = new Date(Date.UTC(anioRef, mesRef, r.dia_pago)).getUTCDay();
       const dias: number[] = [];
-      for (let d = dia; d >= 1; d -= 7) dias.unshift(d);
-      for (let d = dia + 7; d <= ult; d += 7) dias.push(d);
+      for (let d = 1; d <= ult; d++) {
+        if (new Date(Date.UTC(anio, mes, d)).getUTCDay() === dow) dias.push(d);
+      }
       return dias;
     }
     case "semestral": {

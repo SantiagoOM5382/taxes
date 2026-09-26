@@ -871,3 +871,23 @@ a.row-main:hover .row-title { color: var(--petrol); }
 .danger-zone h2 { font-size: 16px; }
 .danger-zone .hint { margin-top: 4px; }
 .check-btn.is-locked { cursor: default; }
+.accion-ok { font-size: 12.5px; color: var(--paid); font-weight: 600; }
+
+/* ── Plan de pagos y paz y salvo ───────────────────────────── */
+
+.plan-campos { display: flex; flex-direction: column; gap: 14px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-2); }
+.plan-preview { font-size: 14px; color: var(--ink-2); }
+.plan-preview strong { color: var(--ink); }
+.plan-resumen { font-size: 15px; color: var(--ink-2); margin-bottom: 12px; max-width: 70ch; }
+.plan-resumen strong { color: var(--ink); }
+.plan-aviso { padding: 10px 12px; border-radius: var(--r-control); background: var(--warn-soft); color: var(--warn); font-size: 14px; font-weight: 550; margin-bottom: 12px; }
+.plan-num { color: var(--ink-3); font-weight: 600; width: 36px; }
+tr.is-vencida td { color: var(--debt); }
+.pys { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.pys-icono { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; flex-shrink: 0; background: var(--surface-2); color: var(--ink-3); border: 1px solid var(--line-soft); }
+.pys-icono.is-listo { background: var(--paid-soft); color: var(--paid); border-color: transparent; }
+.pys-texto { flex: 1; min-width: 200px; }
+.ledger-figures.is-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 720px) { .ledger-figures.is-2 { grid-template-columns: minmax(0, 1fr); } }
+.row-con-extra { display: flex; align-items: center; gap: 10px; }
+.row-con-extra > .row { flex: 1; min-width: 0; }

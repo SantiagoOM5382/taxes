@@ -6,6 +6,9 @@ import { Pencil } from "lucide-react";
 import type { Deuda } from "@/lib/deudas";
 import Modal from "./Modal";
 import Field, { OPCIONES_MESES } from "./Field";
+import PlanPagoCampos from "./PlanPagoCampos";
+import { fechasDePago } from "@/lib/plan";
+import { hoyISO } from "@/lib/format";
 
 // Editor completo de una deuda o responsabilidad (datos, montos y programación del pago)
 export default function EditarDeuda({ deuda }: { deuda: Deuda }) {
@@ -16,6 +19,14 @@ export default function EditarDeuda({ deuda }: { deuda: Deuda }) {
   const [loading, setLoading] = useState(false);
   const esDeuda = deuda.categoria === "deuda";
   const conMes = frecuencia === "anual" || frecuencia === "semestral";
+  const [monto, setMonto] = useState(String(deuda.monto_inicial));
+  // Próxima fecha según la programación guardada, para arrancar el plan desde ahí
+  const proximo =
+    fechasDePago(
+      { frecuencia_pago: deuda.frecuencia_pago ?? "mensual", dia_pago: deuda.dia_pago, mes_pago: deuda.mes_pago, created_at: "" },
+      hoyISO(),
+      { n: 1 }
+    )[0] ?? null;
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -27,7 +38,7 @@ export default function EditarDeuda({ deuda }: { deuda: Deuda }) {
       acreedor: f.get("acreedor"),
       frecuencia_pago: frecuencia,
       dia_pago: f.get("dia_pago"),
-      mes_pago: conMes ? f.get("mes_pago") : null,
+      mes_pago: esDeuda || conMes ? f.get("mes_pago") : null,
       valor_estimado: f.get("valor_estimado"),
     };
     if (esDeuda) {
@@ -74,63 +85,77 @@ export default function EditarDeuda({ deuda }: { deuda: Deuda }) {
                   inputMode="decimal"
                   min={Math.max(1, deuda.total_pagado)}
                   step="any"
-                  defaultValue={deuda.monto_inicial}
+                  value={monto}
+                  onChange={(e) => setMonto(e.target.value)}
                   required
                 />
               </Field>
-              <div className="field-row">
-                <Field label="Interés anual %">
-                  <input name="tasa_interes" type="number" inputMode="decimal" min="0" step="any" defaultValue={deuda.tasa_interes ?? ""} />
-                </Field>
-                <Field label="Vence el">
-                  <input name="fecha_vencimiento" type="date" defaultValue={deuda.fecha_vencimiento ?? ""} />
-                </Field>
-              </div>
+              <Field label="Interés anual %">
+                <input name="tasa_interes" type="number" inputMode="decimal" min="0" step="any" defaultValue={deuda.tasa_interes ?? ""} />
+              </Field>
+              <Field label="Frecuencia">
+                <select value={frecuencia} onChange={(e) => setFrecuencia(e.target.value)}>
+                  <option value="semanal">Semanal</option>
+                  <option value="quincenal">Quincenal</option>
+                  <option value="mensual">Mensual</option>
+                  <option value="semestral">Semestral</option>
+                  <option value="anual">Anual</option>
+                </select>
+              </Field>
+              <PlanPagoCampos
+                saldo={Math.max(0, (Number(monto) || 0) - deuda.total_pagado)}
+                frecuencia={frecuencia}
+                inicial={{ primerPago: proximo, cuota: deuda.valor_estimado, fin: deuda.fecha_vencimiento }}
+              />
             </>
           )}
 
-          <div className="field-row">
-            <Field label="Frecuencia">
-              <select value={frecuencia} onChange={(e) => setFrecuencia(e.target.value)}>
-                <option value="semanal">Semanal</option>
-                <option value="quincenal">Quincenal</option>
-                <option value="mensual">Mensual</option>
-                <option value="semestral">Semestral</option>
-                <option value="anual">Anual</option>
-              </select>
-            </Field>
-            <Field label={esDeuda ? "Cuota (COP)" : "Valor por pago (COP)"}>
-              <input
-                name="valor_estimado"
-                type="number"
-                inputMode="decimal"
-                min="0"
-                step="any"
-                defaultValue={deuda.valor_estimado ?? ""}
-                placeholder="Opcional"
-              />
-            </Field>
-          </div>
-          <div className="field-row">
-            <Field label="Día de pago" hint="Para verlo en el calendario.">
-              <input
-                name="dia_pago"
-                type="number"
-                inputMode="numeric"
-                min="1"
-                max="31"
-                defaultValue={deuda.dia_pago ?? ""}
-                placeholder="1 a 31"
-              />
-            </Field>
-            {conMes && (
-              <Field label={frecuencia === "anual" ? "Mes de pago" : "Primer mes de pago"}>
-                <select name="mes_pago" defaultValue={deuda.mes_pago ?? 1}>
-                  {OPCIONES_MESES}
-                </select>
-              </Field>
-            )}
-          </div>
+          {!esDeuda && (
+            <>
+              <div className="field-row">
+                <Field label="Frecuencia">
+                  <select value={frecuencia} onChange={(e) => setFrecuencia(e.target.value)}>
+                    <option value="semanal">Semanal</option>
+                    <option value="quincenal">Quincenal</option>
+                    <option value="mensual">Mensual</option>
+                    <option value="semestral">Semestral</option>
+                    <option value="anual">Anual</option>
+                  </select>
+                </Field>
+                <Field label="Valor por pago (COP)">
+                  <input
+                    name="valor_estimado"
+                    type="number"
+                    inputMode="decimal"
+                    min="0"
+                    step="any"
+                    defaultValue={deuda.valor_estimado ?? ""}
+                    placeholder="Opcional"
+                  />
+                </Field>
+              </div>
+              <div className="field-row">
+                <Field label="Día de pago" hint="Para verlo en el calendario.">
+                  <input
+                    name="dia_pago"
+                    type="number"
+                    inputMode="numeric"
+                    min="1"
+                    max="31"
+                    defaultValue={deuda.dia_pago ?? ""}
+                    placeholder="1 a 31"
+                  />
+                </Field>
+                {conMes && (
+                  <Field label={frecuencia === "anual" ? "Mes de pago" : "Primer mes de pago"}>
+                    <select name="mes_pago" defaultValue={deuda.mes_pago ?? 1}>
+                      {OPCIONES_MESES}
+                    </select>
+                  </Field>
+                )}
+              </div>
+            </>
+          )}
 
           {error && <p className="form-error">{error}</p>}
           <div className="form-actions">

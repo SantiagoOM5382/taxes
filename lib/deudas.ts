@@ -22,6 +22,7 @@ export interface Deuda {
   pagada_mes_actual?: boolean;
   pagada_por_pagos?: boolean;
   pagado_en_periodo?: number;
+  paz_y_salvo_url: string | null;
   dueno?: string;
 }
 
@@ -47,6 +48,7 @@ function mapear(row: Fila): Deuda {
     fecha_vencimiento: row.fecha_vencimiento ? String(row.fecha_vencimiento) : null,
     dia_pago: row.dia_pago != null ? Number(row.dia_pago) : null,
     mes_pago: row.mes_pago != null ? Number(row.mes_pago) : null,
+    paz_y_salvo_url: row.paz_y_salvo_url ? String(row.paz_y_salvo_url) : null,
     dueno: row.dueno ? String(row.dueno) : undefined,
   };
 }

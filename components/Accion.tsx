@@ -13,6 +13,7 @@ export default function Accion({
   className = "btn btn-ghost btn-sm",
   title,
   ariaLabel,
+  exito,
   children,
 }: {
   url: string;
@@ -20,6 +21,7 @@ export default function Accion({
   body?: unknown;
   confirmar?: string;
   despues?: string; // ruta a la que ir al terminar; si no, refresca
+  exito?: string; // mensaje breve a mostrar cuando sale bien
   className?: string;
   title?: string;
   ariaLabel?: string;
@@ -28,10 +30,12 @@ export default function Accion({
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [ok, setOk] = useState("");
 
   async function ejecutar() {
     if (confirmar && !confirm(confirmar)) return;
     setError("");
+    setOk("");
     setLoading(true);
     const res = await fetch(url, {
       method,
@@ -44,6 +48,11 @@ export default function Accion({
       setError(data?.error ?? "No se pudo completar. Intenta de nuevo.");
       return;
     }
+    if (exito) {
+      setOk(exito);
+      setTimeout(() => setOk(""), 4000);
+      return;
+    }
     if (despues) router.push(despues);
     router.refresh();
   }
@@ -53,6 +62,11 @@ export default function Accion({
       <button type="button" className={className} disabled={loading} onClick={ejecutar} title={title} aria-label={ariaLabel}>
         {children}
       </button>
+      {ok && (
+        <span className="accion-ok" role="status">
+          {ok}
+        </span>
+      )}
       {error && (
         <span className="accion-error" role="alert">
           {error}

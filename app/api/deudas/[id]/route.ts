@@ -3,6 +3,7 @@ import type { InValue } from "@libsql/client";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
 import { estadoSegunSaldo } from "@/lib/deudas";
+import { eliminarArchivosDeuda } from "@/lib/storage";
 
 const FRECUENCIAS = ["semanal", "quincenal", "mensual", "semestral", "anual"];
 
@@ -103,7 +104,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 }
 
 // Elimina la deuda con sus pagos y accesos compartidos.
-// Los saldos de las cuentas no cambian: el dinero pagado ya salió.
+// Los saldos de las cuentas no cambian: el dinero pagado ya salió. También borra sus archivos.
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await getSession();
   if (!user) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
@@ -120,5 +121,6 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     ],
     "write"
   );
+  await eliminarArchivosDeuda(Number(actual.id));
   return NextResponse.json({ ok: true });
 }

@@ -1,17 +1,21 @@
 import { notFound, redirect } from "next/navigation";
-import { FileText, Trash2, Archive, RotateCcw, X } from "lucide-react";
+import { FileText, Trash2, Archive, RotateCcw, X, Mail } from "lucide-react";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
 import { getDeudaConAcceso } from "@/lib/deudas";
 import { storageConfigurado } from "@/lib/storage";
 import { listCuentas } from "@/lib/finanzas";
-import { cop, fmtFecha, fmtFrecuencia, MESES } from "@/lib/format";
+import { CADA, cop, fmtFecha, fmtFrecuencia, MESES } from "@/lib/format";
 import PageHeader from "@/components/PageHeader";
 import NuevoPago from "@/components/NuevoPago";
 import Compartir from "@/components/Compartir";
 import SubirComprobante from "@/components/SubirComprobante";
 import EditarDeuda from "@/components/EditarDeuda";
 import Accion from "@/components/Accion";
+import PazYSalvo from "@/components/PazYSalvo";
+import { correoConfigurado } from "@/lib/correo";
+import { planVigente } from "@/lib/plan";
+import { hoyColombia, periodoDe } from "@/lib/periodos";
 
 export default async function DeudaPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await getSession();
@@ -53,6 +57,32 @@ export default async function DeudaPage({ params }: { params: Promise<{ id: stri
   ]
     .filter(Boolean)
     .join(" ");
+
+  // Plan de pagos vigente: lo que falta, repartido en las próximas fechas de pago
+  const hoy = hoyColombia();
+  const periodo = periodoDe(deuda.frecuencia_pago, hoy, deuda.mes_pago);
+  const pagadoEnPeriodo = pagosRes.rows
+    .filter((p) => String(p.fecha_pago) >= periodo.inicio && String(p.fecha_pago) <= periodo.fin)
+    .reduce((s, p) => s + Number(p.monto), 0);
+  const plan = esDeuda
+    ? planVigente({
+        saldo: Math.max(0, deuda.monto_actual),
+        cuota: deuda.valor_estimado,
+        vencimiento: deuda.fecha_vencimiento,
+        prog: {
+          frecuencia_pago: deuda.frecuencia_pago ?? "mensual",
+          dia_pago: deuda.dia_pago,
+          mes_pago: deuda.mes_pago,
+          created_at: "",
+        },
+        hoy,
+        periodo,
+        pagadoEnPeriodo,
+      })
+    : null;
+  const cada = CADA[deuda.frecuencia_pago ?? "mensual"] ?? "por periodo";
+  const MAX_FILAS = 12;
+  const puedeEnviarRecibo = deuda.es_propia && correoConfigurado && accesos.length > 0;
 
   return (
     <>
@@ -102,7 +132,7 @@ export default async function DeudaPage({ params }: { params: Promise<{ id: stri
                 <div className="ledger-label">Pagado</div>
                 <div className="ledger-figure money">{cop.format(deuda.total_pagado)}</div>
                 <div className="ledger-note">
-                  {pagosRes.rows.length} {pagosRes.rows.length === 1 ? "pago" : "pagos"} registrados
+                  {pagosRes.rows.length} {pagosRes.rows.length === 1 ? "pago registrado" : "pagos registrados"}
                 </div>
               </div>
               <div className="ledger-item">
@@ -128,7 +158,7 @@ export default async function DeudaPage({ params }: { params: Promise<{ id: stri
               <div className="ledger-label">Pagado en total</div>
               <div className="ledger-figure money">{cop.format(deuda.total_pagado)}</div>
               <div className="ledger-note">
-                {pagosRes.rows.length} {pagosRes.rows.length === 1 ? "pago" : "pagos"} registrados
+                {pagosRes.rows.length} {pagosRes.rows.length === 1 ? "pago registrado" : "pagos registrados"}
               </div>
             </div>
             <div className="ledger-item">
@@ -156,13 +186,86 @@ export default async function DeudaPage({ params }: { params: Promise<{ id: stri
             )}
             {deuda.fecha_vencimiento && (
               <div>
-                <div className="stat-label">Vence</div>
+                <div className="stat-label">Fecha final</div>
                 <div className="stat-value">{fmtFecha(deuda.fecha_vencimiento)}</div>
               </div>
             )}
           </div>
         )}
       </section>
+
+      {esDeuda && !saldada && (
+        <section className="panel">
+          <div className="panel-head">
+            <h2>Plan de pagos</h2>
+          </div>
+          {!plan ? (
+            <div className="empty">
+              {deuda.es_propia
+                ? "Sin plan todavía. En Editar elige cuánto pagas o cuándo quieres terminar y aquí verás cada cuota."
+                : "El dueño aún no ha definido un plan de pagos."}
+            </div>
+          ) : (
+            <>
+              <p className="plan-resumen">
+                {plan.cuotas.length === 0 ? (
+                  "No quedan fechas de pago para repartir el saldo."
+                ) : (
+                  <>
+                    Pagando <strong>{cop.format(plan.cuota)}</strong> {cada} terminas el{" "}
+                    <strong>{fmtFecha(plan.fin)}</strong>, en {plan.cuotas.length}{" "}
+                    {plan.cuotas.length === 1 ? "pago" : "pagos"}.
+                    {pagadoEnPeriodo > 0 && ` Este periodo ya abonaste ${cop.format(pagadoEnPeriodo)}.`}
+                  </>
+                )}
+              </p>
+              {plan.cuota_necesaria != null && (
+                <p className="plan-aviso">
+                  Así te pasas del {fmtFecha(plan.vencimiento)}. Para terminar a tiempo necesitas pagar{" "}
+                  {cop.format(plan.cuota_necesaria)} {cada}.
+                </p>
+              )}
+              {plan.vencimiento_pasado && (
+                <p className="plan-aviso">La fecha límite ({fmtFecha(plan.vencimiento)}) ya pasó. Ajusta el plan en Editar.</p>
+              )}
+              {plan.cuotas.length > 0 && (
+                <div className="table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>#</th>
+                        <th>Fecha</th>
+                        <th className="num">Cuota</th>
+                        <th className="num">Queda debiendo</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {plan.cuotas.slice(0, MAX_FILAS).map((c) => (
+                        <tr key={c.numero} className={c.vencida ? "is-vencida" : ""}>
+                          <td className="plan-num">{c.numero}</td>
+                          <td>
+                            {fmtFecha(c.fecha)}
+                            {c.vencida && <span className="tag tag-debt" style={{ marginLeft: 8 }}>Vencida</span>}
+                          </td>
+                          <td className="money" style={{ fontWeight: 650 }}>
+                            {cop.format(c.monto)}
+                          </td>
+                          <td className="money muted">{c.saldo_despues === 0 ? "Saldada" : cop.format(c.saldo_despues)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {plan.cuotas.length > MAX_FILAS && (
+                    <p className="hint" style={{ marginTop: 8 }}>
+                      Y {plan.cuotas.length - MAX_FILAS} cuotas más hasta el {fmtFecha(plan.fin)}.
+                    </p>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+        </section>
+      )}
 
       <section className="panel">
         <div className="panel-head">
@@ -184,7 +287,7 @@ export default async function DeudaPage({ params }: { params: Promise<{ id: stri
                   <th>Fecha</th>
                   <th className="num">Monto</th>
                   <th style={{ textAlign: "right" }}>Comprobante</th>
-                  {deuda.es_propia && <th aria-label="Acciones" />}
+                  {deuda.es_propia && <th aria-label="Acciones" style={{ width: puedeEnviarRecibo ? 150 : 44 }} />}
                 </tr>
               </thead>
               <tbody>
@@ -212,7 +315,19 @@ export default async function DeudaPage({ params }: { params: Promise<{ id: stri
                       )}
                     </td>
                     {deuda.es_propia && (
-                      <td style={{ textAlign: "right", width: 44 }}>
+                      <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
+                        {puedeEnviarRecibo && (
+                          <Accion
+                            url={`/api/deudas/${deuda.id}/pagos/${String(p.id)}/recibo`}
+                            className="btn btn-quiet btn-sm"
+                            title="Enviar recibo por correo"
+                            exito="Recibo enviado"
+                            confirmar={`¿Enviar el recibo de este pago a ${accesos.map((a) => a.nombre).join(", ")}?`}
+                          >
+                            <Mail size={15} aria-hidden />
+                            Recibo
+                          </Accion>
+                        )}
                         <Accion
                           url={`/api/deudas/${deuda.id}/pagos/${String(p.id)}`}
                           method="DELETE"
@@ -234,6 +349,17 @@ export default async function DeudaPage({ params }: { params: Promise<{ id: stri
           </div>
         )}
       </section>
+
+      {esDeuda && (
+        <PazYSalvo
+          deudaId={deuda.id}
+          saldada={saldada}
+          pendiente={Math.max(0, deuda.monto_actual)}
+          url={deuda.paz_y_salvo_url}
+          esPropia={deuda.es_propia}
+          subidaDisponible={storageConfigurado}
+        />
+      )}
 
       {deuda.es_propia && accesos.length > 0 && (
         <section className="panel">
@@ -270,7 +396,9 @@ export default async function DeudaPage({ params }: { params: Promise<{ id: stri
           <div>
             <h2>{esDeuda ? "Opciones de la deuda" : "Opciones de la responsabilidad"}</h2>
             <p className="hint">
-              {deuda.estado === "archivada"
+              {saldada
+                ? "Está saldada. Si registraste un pago por error, anúlalo y vuelve a quedar activa."
+                : deuda.estado === "archivada"
                 ? "Está archivada: no aparece en el resumen ni en el calendario."
                 : esDeuda
                   ? "Archívala si ya no la vas a pagar. Se archiva sola al quedar saldada."
@@ -278,7 +406,7 @@ export default async function DeudaPage({ params }: { params: Promise<{ id: stri
             </p>
           </div>
           <div className="row-actions">
-            {deuda.estado === "archivada" ? (
+            {saldada ? null : deuda.estado === "archivada" ? (
               <Accion url={`/api/deudas/${deuda.id}`} method="PATCH" body={{ estado: "activa" }}>
                 <RotateCcw size={14} aria-hidden />
                 Restaurar

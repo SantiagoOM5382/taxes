@@ -61,11 +61,11 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
-  } else {
-    estimado = valor_estimado != null && valor_estimado !== "" ? Number(valor_estimado) : null;
-    if (estimado != null && (!Number.isFinite(estimado) || estimado <= 0)) {
-      return NextResponse.json({ error: "valor_estimado debe ser > 0" }, { status: 400 });
-    }
+  }
+  // Responsabilidad: valor de cada pago. Deuda: cuota del plan de pagos. Ambos opcionales.
+  estimado = valor_estimado != null && valor_estimado !== "" ? Number(valor_estimado) : null;
+  if (estimado != null && (!Number.isFinite(estimado) || estimado <= 0)) {
+    return NextResponse.json({ error: "El valor de la cuota debe ser mayor a 0" }, { status: 400 });
   }
 
   const diaPagoVal = dia_pago != null && dia_pago !== "" ? Number(dia_pago) : null;

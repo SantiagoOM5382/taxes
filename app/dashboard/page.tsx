@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Download } from "lucide-react";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { listDeudas, type Deuda } from "@/lib/deudas";
@@ -21,7 +22,7 @@ function pctPagado(d: Deuda) {
 function DeudaFila({ d, archivada = false }: { d: Deuda; archivada?: boolean }) {
   const pct = pctPagado(d);
   return (
-    <li>
+    <li className="row-con-extra">
       <Link href={`/deudas/${d.id}`} className="row">
         <div className="row-main">
           <div className="row-title">{d.descripcion}</div>
@@ -56,6 +57,12 @@ function DeudaFila({ d, archivada = false }: { d: Deuda; archivada?: boolean }) 
           )}
         </div>
       </Link>
+      {archivada && d.paz_y_salvo_url && (
+        <a className="btn btn-ghost btn-sm" href={`${d.paz_y_salvo_url}&descargar=1`} title="Descargar paz y salvo">
+          <Download size={14} aria-hidden />
+          Paz y salvo
+        </a>
+      )}
     </li>
   );
 }
@@ -112,7 +119,6 @@ export default async function Dashboard() {
   // Debes = saldo de tus deudas + lo usado de las tarjetas
   const debesDeudas = deudas.reduce((s, d) => s + Math.max(0, d.monto_actual), 0);
   const debes = debesDeudas + creditoUsado;
-  const neto = tienes - debes;
   const base = Math.max(tienes, 0) + debes;
   const pctTienes = base > 0 ? (Math.max(tienes, 0) / base) * 100 : 0;
 
@@ -132,7 +138,7 @@ export default async function Dashboard() {
       />
 
       <section className="ledger" aria-label="Estado de cuenta">
-        <div className="ledger-figures">
+        <div className="ledger-figures is-2">
           <div className="ledger-item">
             <div className="ledger-label">Tienes</div>
             <div className="ledger-figure money">{cop.format(tienes)}</div>
@@ -151,11 +157,6 @@ export default async function Dashboard() {
                 .filter(Boolean)
                 .join(" y ") || "Sin deudas activas"}
             </div>
-          </div>
-          <div className="ledger-item">
-            <div className="ledger-label">Te queda</div>
-            <div className={`ledger-figure money ${neto < 0 ? "money-debt" : ""}`}>{cop.format(neto)}</div>
-            <div className="ledger-note">Lo que tienes menos lo que debes</div>
           </div>
         </div>
 

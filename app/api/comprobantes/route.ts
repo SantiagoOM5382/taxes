@@ -28,7 +28,10 @@ export async function GET(req: NextRequest) {
   return new NextResponse(res.stream as unknown as ReadableStream, {
     headers: {
       "Content-Type": res.headers.get("content-type") ?? "application/octet-stream",
-      "Content-Disposition": res.headers.get("content-disposition") ?? "inline",
+      // ?descargar=1 fuerza la descarga con un nombre legible (ej. paz y salvo)
+      "Content-Disposition": req.nextUrl.searchParams.get("descargar")
+        ? `attachment; filename="${(path.split("/").pop() ?? "archivo").replace(/^\d+-/, "").replace(/"/g, "")}"`
+        : res.headers.get("content-disposition") ?? "inline",
       "Cache-Control": "private, max-age=3600",
     },
   });

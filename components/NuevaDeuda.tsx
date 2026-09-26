@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Field, { OPCIONES_MESES } from "./Field";
+import PlanPagoCampos from "./PlanPagoCampos";
 
 type Categoria = "deuda" | "responsabilidad";
 
@@ -12,6 +13,7 @@ export default function NuevaDeuda({ onSuccess }: { onSuccess?: () => void }) {
   const [loading, setLoading] = useState(false);
   const [categoria, setCategoria] = useState<Categoria>("deuda");
   const [frecuencia, setFrecuencia] = useState("mensual");
+  const [monto, setMonto] = useState("");
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -32,7 +34,11 @@ export default function NuevaDeuda({ onSuccess }: { onSuccess?: () => void }) {
         tasa_interes: form.get("tasa_interes"),
         fecha_vencimiento: form.get("fecha_vencimiento"),
         dia_pago: form.get("dia_pago") || null,
-        mes_pago: frecuencia === "anual" || frecuencia === "semestral" ? form.get("mes_pago") || null : null,
+        // Deudas: el plan siempre ancla día y mes. Responsabilidades: el mes solo aplica a anual/semestral.
+        mes_pago:
+          categoria === "deuda" || frecuencia === "anual" || frecuencia === "semestral"
+            ? form.get("mes_pago") || null
+            : null,
       }),
     }).catch(() => null);
     setLoading(false);
@@ -42,6 +48,7 @@ export default function NuevaDeuda({ onSuccess }: { onSuccess?: () => void }) {
       return;
     }
     formEl.reset();
+    setMonto("");
     setCategoria("deuda");
     setFrecuencia("mensual");
     router.refresh();
@@ -88,7 +95,16 @@ export default function NuevaDeuda({ onSuccess }: { onSuccess?: () => void }) {
         </Field>
         {esDeuda ? (
           <Field label="Monto total (COP)">
-            <input name="monto_inicial" type="number" inputMode="decimal" min="1" step="any" required />
+            <input
+              name="monto_inicial"
+              type="number"
+              inputMode="decimal"
+              min="1"
+              step="any"
+              value={monto}
+              onChange={(e) => setMonto(e.target.value)}
+              required
+            />
           </Field>
         ) : (
           <Field label="Valor por pago (COP)">
@@ -98,14 +114,12 @@ export default function NuevaDeuda({ onSuccess }: { onSuccess?: () => void }) {
       </div>
 
       {esDeuda ? (
-        <div className="field-row">
-          <Field label="Interés anual %">
+        <>
+          <PlanPagoCampos saldo={Number(monto) || 0} frecuencia={frecuencia} />
+          <Field label="Interés anual %" hint="Opcional. Ayuda al asesor a decidir qué deuda pagar primero.">
             <input name="tasa_interes" type="number" inputMode="decimal" min="0" step="any" placeholder="Opcional" />
           </Field>
-          <Field label="Vence el">
-            <input name="fecha_vencimiento" type="date" />
-          </Field>
-        </div>
+        </>
       ) : (
         <div className="field-row">
           <Field label="Día de pago">
